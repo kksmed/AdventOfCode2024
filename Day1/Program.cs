@@ -12,6 +12,10 @@ var exDistance = FindDistanceSum(example.Split(Environment.NewLine, StringSplitO
 
 Console.WriteLine($"Example - distance: {exDistance}");
 
+var exSimilarity = FindSimilaritySum(example.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+
+Console.WriteLine($"Example - similarity: {exSimilarity}");
+
 var distanceSum = FindDistanceSum(File.ReadAllLines("input.txt"));
 
 Console.WriteLine($"Distance: {distanceSum}");
@@ -52,5 +56,5 @@ int FindSimilaritySum(string[] input)
 {
   var (a, b) = Parse(input);
   var counts = b.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
-  return a.Select(x=> counts.GetValueOrDefault(x, 0)).Sum();
+  return a.Select(x=> x * counts.GetValueOrDefault(x, 0)).Sum();
 }
