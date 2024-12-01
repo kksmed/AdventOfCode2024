@@ -10,9 +10,9 @@
 
 var input = example.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
 var (a, b) = Parse(input);
+var distance = a.Order().Zip(b.Order()).Select(x => Math.Abs(x.First - x.Second)).Sum();
 
-
-Console.WriteLine($"{a} {b}");
+Console.WriteLine($"Distance: {distance}");
 
 return;
 
