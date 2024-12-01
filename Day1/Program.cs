@@ -8,11 +8,13 @@
   3   3
   """;
 
-var input = example.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-var (a, b) = Parse(input);
-var distance = a.Order().Zip(b.Order()).Select(x => Math.Abs(x.First - x.Second)).Sum();
+var exDistance = FindDistanceSum(example.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
 
-Console.WriteLine($"Distance: {distance}");
+Console.WriteLine($"Distance: {exDistance}");
+
+var d = FindDistanceSum(File.ReadAllLines("input.txt"));
+
+Console.WriteLine($"Distance: {d}");
 
 return;
 
@@ -33,4 +35,13 @@ return;
   }
 
   return (a, b);
+}
+
+int FindDistanceSum(string[] input)
+{
+  {
+    var (a, b) = Parse(input);
+    var i = a.Order().Zip(b.Order()).Select(x => Math.Abs(x.First - x.Second)).Sum();
+    return i;
+  }
 }
