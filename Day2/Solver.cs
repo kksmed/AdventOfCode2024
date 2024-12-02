@@ -43,68 +43,54 @@ public class Solver : ISolver<int[][]>
 
   public int? SolveSecond(int[][] data)
   {
-    var safeCount = 0;
-    foreach (var report in data)
+    return data.Count(report => IsSafe(report, true) || IsSafe(report.Skip(1).ToArray()));
+
+    bool IsSafe(int[] report, bool withDampening = false)
     {
-      var isSafe = true;
-      var problemDampened = false;
+      var problemDampened = !withDampening;
       var prev = report[0];
       bool? isIncreasing = null;
-      for(var i = 1; isSafe && i < report.Length; i++)
+      for(var i = 1; i < report.Length; i++)
       {
         var current = report[i];
         var increase = current - prev;
         if (Math.Abs(increase) > 3)
         {
-          if (!problemDampened)
-          {
-            problemDampened = true;
-            continue;
-          }
-          isSafe = false;
+          if (problemDampened) return false;
+          problemDampened = true;
+          continue;
         }
 
-        if (increase == 0)
+        switch (increase)
         {
-          if (!problemDampened)
+          case 0 when problemDampened:
+            return false;
+          case 0:
+            problemDampened = true;
+            continue;
+          case > 0 when isIncreasing == null:
+            isIncreasing = true;
+            break;
+          case > 0 when !isIncreasing.Value:
           {
+            if (problemDampened) return false;
             problemDampened = true;
             continue;
           }
-          isSafe = false;
-        }
-        if (increase > 0)
-        {
-          if (isIncreasing == null) isIncreasing = true;
-          else if (!isIncreasing.Value)
+          case < 0 when isIncreasing == null:
+            isIncreasing = false;
+            break;
+          case < 0 when isIncreasing.Value:
           {
-            if (!problemDampened)
-            {
-              problemDampened = true;
-              continue;
-            }
-            isSafe = false;
+            if (problemDampened) return false;
+            problemDampened = true;
+            continue;
           }
         }
-        if (increase < 0)
-        {
-          if (isIncreasing == null) isIncreasing = false;
-          else if (isIncreasing.Value)
-          {
-            if (!problemDampened)
-            {
-              problemDampened = true;
-              continue;
-            }
-            isSafe = false;
-          }
-        }
+
         prev = current;
       }
-      if (isSafe)
-        safeCount++;
+      return true;
     }
-
-    return safeCount;
   }
 }
