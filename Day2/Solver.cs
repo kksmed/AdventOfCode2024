@@ -30,6 +30,7 @@ public class Solver : ISolver<int[][]>
           if (isIncreasing == null) isIncreasing = false;
           else if (isIncreasing.Value) isSafe = false;
         }
+        prev = current;
       }
       if (isSafe)
         safeCount++;
