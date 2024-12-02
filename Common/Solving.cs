@@ -16,6 +16,8 @@ public static class Solving
 
   static int SolveFirstThenSecond<T>(ISolver<T> solver, string[] input)
   {
+    Console.WriteLine($"Day: {solver.GetType().Namespace}");
+
     var data = solver.Parse(input);
     var firstAnswer = solver.SolveFirst(data);
     Console.WriteLine($"1st answer: {firstAnswer}");
