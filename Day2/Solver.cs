@@ -20,6 +20,8 @@ public class Solver : ISolver<int[][]>
         var increase = current - prev;
         if (Math.Abs(increase) > 3)
           isSafe = false;
+        if (increase == 0)
+          isSafe = false;
         if (increase > 0)
         {
           if (isIncreasing == null) isIncreasing = true;
