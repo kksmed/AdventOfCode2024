@@ -1,3 +1,16 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using Common;
 
-Console.WriteLine("Hello, World!");
+using Day2;
+
+var example =
+  """
+  7 6 4 2 1
+  1 2 7 8 9
+  9 7 6 2 1
+  1 3 2 4 5
+  8 6 4 4 1
+  1 3 6 7 9
+  """;
+
+var solver = new Solver();
+Solving.SolveExample(solver, example);
