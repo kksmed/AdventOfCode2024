@@ -43,6 +43,68 @@ public class Solver : ISolver<int[][]>
 
   public int? SolveSecond(int[][] data)
   {
-    return null;
+    var safeCount = 0;
+    foreach (var report in data)
+    {
+      var isSafe = true;
+      var problemDampened = false;
+      var prev = report[0];
+      bool? isIncreasing = null;
+      for(var i = 1; isSafe && i < report.Length; i++)
+      {
+        var current = report[i];
+        var increase = current - prev;
+        if (Math.Abs(increase) > 3)
+        {
+          if (!problemDampened)
+          {
+            problemDampened = true;
+            continue;
+          }
+          isSafe = false;
+        }
+
+        if (increase == 0)
+        {
+          if (!problemDampened)
+          {
+            problemDampened = true;
+            continue;
+          }
+          isSafe = false;
+        }
+        if (increase > 0)
+        {
+          if (isIncreasing == null) isIncreasing = true;
+          else if (!isIncreasing.Value)
+          {
+            if (!problemDampened)
+            {
+              problemDampened = true;
+              continue;
+            }
+            isSafe = false;
+          }
+        }
+        if (increase < 0)
+        {
+          if (isIncreasing == null) isIncreasing = false;
+          else if (isIncreasing.Value)
+          {
+            if (!problemDampened)
+            {
+              problemDampened = true;
+              continue;
+            }
+            isSafe = false;
+          }
+        }
+        prev = current;
+      }
+      if (isSafe)
+        safeCount++;
+    }
+
+    return safeCount;
   }
 }

@@ -14,3 +14,4 @@ var example =
 
 var solver = new Solver();
 Solving.SolveExample(solver, example);
+Solving.Solve(solver);

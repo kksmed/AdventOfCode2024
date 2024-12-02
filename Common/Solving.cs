@@ -8,10 +8,10 @@ public static class Solving
     return SolveFirstThenSecond(solver, example.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
   }
 
-  public static int Solve<T>(ISolver<T> solver, string file)
+  public static int Solve<T>(ISolver<T> solver)
   {
     Console.WriteLine("Real input:");
-    return SolveFirstThenSecond(solver, File.ReadAllLines(file));
+    return SolveFirstThenSecond(solver, File.ReadAllLines("input.txt"));
   }
 
   static int SolveFirstThenSecond<T>(ISolver<T> solver, string[] input)

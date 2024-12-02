@@ -16,4 +16,4 @@ var solver = new Solver();
 
 Solving.SolveExample(solver, example);
 
-Solving.Solve(solver, "input1.txt");
+Solving.Solve(solver);
