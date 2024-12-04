@@ -5,17 +5,12 @@ namespace Day2;
 public class Solver2 : ISolver<int[][]>
 {
   public int[][] Parse(string[] input) => input.Select(x => x.Split(' ').Select(int.Parse).ToArray()).ToArray();
-  public int SolveFirst(int[][] data)
-  {
-    return data.Count(IsSafe);
-  }
+  public int SolveFirst(int[][] data) => data.Count(IsSafe);
 
-  public int? SolveSecond(int[][] data)
-  {
-    return data.Count(
-      report => IsSafe(report) || Enumerable.Range(0, report.Length - 1)
-        .Any(x => IsSafe(report.Take(x).Concat(report.Skip(x + 1)).ToArray())));
-  }
+  public int? SolveSecond(int[][] data) => data.Count(IsSafe2);
+
+  public static bool IsSafe2(int[] report) => IsSafe(report) || Enumerable.Range(0, report.Length)
+    .Any(x => IsSafe(report.Take(x).Concat(report.Skip(x + 1)).ToArray()));
 
   static bool IsSafe(int[] report) =>
     (report.SequenceEqual(report.Order()) || report.SequenceEqual(report.OrderDescending()))

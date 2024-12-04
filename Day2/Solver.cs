@@ -8,8 +8,9 @@ public class Solver : ISolver<int[][]>
 
   public int SolveFirst(int[][] data) => data.Count(report => IsSafe(report));
 
-  public int? SolveSecond(int[][] data) =>
-    data.Count(report => IsSafe(report, true) || IsSafe(report.Skip(1).ToArray()));
+  public int? SolveSecond(int[][] data) => data.Count(IsSafe2);
+
+  public static bool IsSafe2(int[] report) => IsSafe(report, true) || IsSafe(report.Skip(1).ToArray());
 
   static bool IsSafe(int[] report, bool withDampening = false)
   {

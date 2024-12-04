@@ -12,11 +12,23 @@ var example =
   1 3 6 7 9
   """;
 
-Console.WriteLine("## First solver ##");
-var solver = new Solver();
-Solving.SolveExample(solver, example);
-Solving.Solve(solver);
-
+// var solver = new Solver();
+// var data = solver.Parse(File.ReadAllLines("input.txt"));
+// foreach (var record in data)
+// {
+//   if (Solver.IsSafe2(record) != Solver2.IsSafe2(record))
+//   {
+//     Console.WriteLine("Different results");
+//     Console.WriteLine(string.Join(" ", record));
+//     Console.WriteLine(Solver.IsSafe2(record));
+//     Console.WriteLine(Solver2.IsSafe2(record));
+//   }
+// }
+// Console.WriteLine("## First solver ##");
+// var solver = new Solver();
+// Solving.SolveExample(solver, example);
+// Solving.Solve(solver);
+//
 Console.WriteLine("## Second solver ##");
 var solver2 = new Solver2();
 Solving.SolveExample(solver2, example);
