@@ -20,7 +20,5 @@ public class Solver2 : ISolver<int[][]>
   static bool IsSafe(int[] report) =>
     (report.SequenceEqual(report.Order()) || report.SequenceEqual(report.OrderDescending()))
     && report.Distinct().Count() == report.Length
-    && report.Skip(1).Aggregate(
-      (Value: report[0], IsSafe: true),
-      (prev, i) => (Value: i, IsSafe: prev.IsSafe && Math.Abs(i - prev.Value) <= 3)).IsSafe;
+    && report.SkipLast(1).Zip(report.Skip(1)).Select(x => Math.Abs(x.First - x.Second)).All(x => x <= 3);
 }
