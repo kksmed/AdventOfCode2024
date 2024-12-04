@@ -12,6 +12,6 @@ var example =
   1 3 6 7 9
   """;
 
-var solver = new Solver();
+var solver = new Solver2();
 Solving.SolveExample(solver, example);
 Solving.Solve(solver);
