@@ -14,20 +14,19 @@ public class Solver : ISolver<int[][]>
   static bool IsSafe(int[] report, bool withDampening = false)
   {
     var problemDampened = !withDampening;
-    var prev = report[0];
+    var previous = report.First();
     bool? isIncreasing = null;
-    for (var i = 1; i < report.Length; i++)
+    foreach (var current in report.Skip(1))
     {
-      var current = report[i];
-      var increase = current - prev;
-      if (Math.Abs(increase) > 3)
+      var step = current - previous;
+      if (Math.Abs(step) > 3)
       {
         if (problemDampened) return false;
         problemDampened = true;
         continue;
       }
 
-      switch (increase)
+      switch (step)
       {
         case 0 when problemDampened:
           return false;
@@ -54,7 +53,7 @@ public class Solver : ISolver<int[][]>
         }
       }
 
-      prev = current;
+      previous = current;
     }
 
     return true;
