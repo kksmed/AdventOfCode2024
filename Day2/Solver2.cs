@@ -12,7 +12,9 @@ public class Solver2 : ISolver<int[][]>
 
   public int? SolveSecond(int[][] data)
   {
-    return null;
+    return data.Count(
+      report => IsSafe(report) || Enumerable.Range(0, report.Length - 1)
+        .Any(x => IsSafe(report.Take(x).Concat(report.Skip(x + 1)).ToArray())));
   }
 
   static bool IsSafe(int[] report) =>
