@@ -52,9 +52,19 @@ class Solver : ISolver<(List<PageOrderingRule> Rules, List<int[]> Pages)>
 
   static int Middle(int[] list) => list[list.Length / 2];
 
-  public int? SolveSecond((List<PageOrderingRule> Rules, List<int[]> Pages) data)
+  public int? SolveSecond((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
+    data.Pages.Where(x => !IsCorrectOrder(data.Rules, x)).Select(x => FixOrder(data.Rules, x)).Select(Middle).Sum();
+
+  static int[] FixOrder(List<PageOrderingRule> rules, int[] pages) =>
+    pages.OrderBy(p => p, new PageComparer(rules)).ToArray();
+}
+
+class PageComparer(List<PageOrderingRule> rules) : IComparer<int>
+{
+  public int Compare(int x, int y)
   {
-    return null;
+    var rule = rules.FirstOrDefault(r => r.Before == x && r.After == y || r.Before == y && r.After == x);
+    return rule is null ? 0 : rule.Before == x ? -1 : 1;
   }
 }
 
