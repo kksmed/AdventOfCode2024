@@ -13,15 +13,16 @@ public class Solver : ISolver<char[,]>
     var position = FindStart(data);
     var direction = Direction.Up;
     var count = 0;
-    while (InBounds(position, data))
+    var map = (char[,])data.Clone();
+    while (InBounds(position, map))
     {
-      var c = data[position.X, position.Y];
+      var c = map[position.X, position.Y];
 
       switch (c)
       {
         case '^':
         case '.':
-          data[position.X, position.Y] = 'X';
+          map[position.X, position.Y] = 'X';
           count++;
           position = Move(position, direction);
           break;
@@ -32,7 +33,7 @@ public class Solver : ISolver<char[,]>
           (position, direction) = ChangeDirection(position, direction);
           break;
         default:
-          throw new ArgumentOutOfRangeException(nameof(data), c, "Unknown character");
+          throw new ArgumentOutOfRangeException(nameof(map), c, "Unknown character");
       }
     }
 
@@ -85,7 +86,47 @@ public class Solver : ISolver<char[,]>
 
   public int? SolveSecond(char[,] data)
   {
-    return null;
+    var maxSteps = (data.Cast<char>().Count(x => x == '.') + 1) * 4;
+    var start = FindStart(data);
+    var count = 0;
+    for (var x = 0; x < data.GetLength(0); x++)
+    {
+      for (var y = 0; y < data.GetLength(1); y++)
+      {
+        var place = data[x, y];
+        if (place != '.') continue;
+
+        var map = (char[,])data.Clone();
+        map[x, y] = '#';
+
+        var steps = 0;
+        var direction = Direction.Up;
+        var position = start;
+        while (InBounds(position, data) && steps < maxSteps)
+        {
+          var p = map[position.X, position.Y];
+
+          switch (p)
+          {
+            case '^':
+            case '.':
+              steps++;
+              position = Move(position, direction);
+              break;
+            case '#':
+              (position, direction) = ChangeDirection(position, direction);
+              break;
+            default:
+              throw new ArgumentOutOfRangeException(nameof(data), p, "Unknown character");
+          }
+        }
+
+        if (steps == maxSteps)
+          count++;
+      }
+    }
+
+    return count;
   }
 }
 
