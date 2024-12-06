@@ -5,7 +5,7 @@ public static class Solving
   public static int SolveExample<T>(ISolver<T> solver, string example)
   {
     Console.WriteLine("Example:");
-    return SolveFirstThenSecond(solver, example.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+    return SolveFirstThenSecond(solver, example.Split(Environment.NewLine));
   }
 
   public static int Solve<T>(ISolver<T> solver)
