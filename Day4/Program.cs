@@ -1,4 +1,8 @@
-﻿var example =
+﻿using Common;
+
+using Day4;
+
+var example =
   """
   MMMSXXMASM
   MSAMXMSMSA
