@@ -16,7 +16,5 @@ var example =
   292: 11 6 16 20
   """;
 
-Solver solver = new();
-SolvingLong.SolveExample(solver, example);
-SolvingLong.Solve(solver);
+Solving.Go(example, new Parser(), new Solver1(), new Solver2());
   
