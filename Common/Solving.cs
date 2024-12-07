@@ -6,7 +6,7 @@ public static class Solving
     string example,
     IParser<T1Data> parser,
     ISolver<T1Data, T1Result>? part1Solver = null,
-    ISolver<T1Data, T1Result>? part2Solver = null) where T1Data : class =>
+    ISolver<T1Data, T1Result>? part2Solver = null) =>
     DoAll(example, parser, part1Solver, null, part2Solver);
 
   public static void Go<T1Data, T1Result, T2Data, T2Result>(
@@ -22,9 +22,9 @@ public static class Solving
     IParser<T1Data> parserPart1,
     ISolver<T1Data, T1Result>? solverPart1 = null,
     IParser<T2Data>? parserPart2 = null,
-    ISolver<T2Data, T2Result>? solverPart2 = null) where T2Data : class
+    ISolver<T2Data, T2Result>? solverPart2 = null)
   {
-    Console.WriteLine($"### Day: {(solverPart1 as object ?? parserPart1).GetType().Namespace} ###");
+    Console.WriteLine($"### {(solverPart1 as object ?? parserPart1).GetType().Namespace} ###");
     Console.WriteLine("## Part 1 ##");
     var exampleInput = example.Split(Environment.NewLine);
     var exampleDataPart1 = parserPart1.Parse(exampleInput);
@@ -52,10 +52,15 @@ public static class Solving
     T2Data exampleDataPart2, dataPart2;
     if (parserPart2 == null)
     {
-      exampleDataPart2 = exampleDataPart1 as T2Data
-        ?? throw new InvalidOperationException("Parser for part 2 is missing and data type differs from part 1");
-      dataPart2 = dataPart1 as T2Data
-        ?? throw new InvalidOperationException("Parser for part 2 is missing and data type differs from part 1");
+      if (exampleDataPart1 is T2Data exampleDataType2)
+        exampleDataPart2 = exampleDataType2;
+      else
+        throw new InvalidOperationException("Parser for part 2 is missing and data type differs from part 1");
+
+      if (dataPart1 is T2Data dataType2)
+        dataPart2 = dataType2;
+      else
+        throw new InvalidOperationException("Parser for part 2 is missing and data type differs from part 1");
 
       // Should be redundant, but type system needs it
       if (solverPart2 == null) return;

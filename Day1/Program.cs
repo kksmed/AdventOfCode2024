@@ -12,8 +12,5 @@ var example =
   3   3
   """;
 
-var solver = new Solver();
+Solving.Go(example, new Parser(), new Solver1(), new Solver2());
 
-SolvingLegacy.SolveExample(solver, example);
-
-SolvingLegacy.Solve(solver);

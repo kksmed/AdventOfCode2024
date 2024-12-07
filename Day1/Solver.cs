@@ -2,7 +2,7 @@ using Common;
 
 namespace Day1;
 
-class Solver : ISolverLegacy<(List<int> A, List<int> B)>
+class Parser: IParser<(List<int> A, List<int> B)>
 {
   public (List<int> A, List<int> B) Parse(string[] input)
   {
@@ -22,11 +22,16 @@ class Solver : ISolverLegacy<(List<int> A, List<int> B)>
 
     return (A: a, B: b);
   }
-
-  public int SolveFirst((List<int> A, List<int> B) data) =>
+}
+class Solver1 : ISolver<(List<int> A, List<int> B), int>
+{
+  public int Solve((List<int> A, List<int> B) data) =>
     data.A.Order().Zip(data.B.Order()).Select(x => Math.Abs(x.First - x.Second)).Sum();
+}
 
-  public int? SolveSecond((List<int> A, List<int> B) data)
+class Solver2 : ISolver<(List<int> A, List<int> B), int>
+{
+  public int Solve((List<int> A, List<int> B) data)
   {
     var counts = data.B.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
     return data.A.Select(x => x * counts.GetValueOrDefault(x, 0)).Sum();
