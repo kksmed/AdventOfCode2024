@@ -2,7 +2,7 @@ using Common;
 
 namespace Day1;
 
-class Solver : ISolver<(List<int> A, List<int> B)>
+class Solver : ISolverLegacy<(List<int> A, List<int> B)>
 {
   public (List<int> A, List<int> B) Parse(string[] input)
   {

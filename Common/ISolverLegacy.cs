@@ -1,6 +1,6 @@
 ﻿namespace Common;
 
-public interface ISolver<T>
+public interface ISolverLegacy<T>
 {
   T Parse(string[] input);
   int SolveFirst(T data);

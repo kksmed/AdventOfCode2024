@@ -4,7 +4,7 @@ using Common;
 
 namespace Day4;
 
-public class Solver : ISolver<char[,]>
+public class Solver : ISolverLegacy<char[,]>
 {
   public char[,] Parse(string[] input) => Parsing.ParseToCharMap(input);
 

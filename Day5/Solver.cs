@@ -2,7 +2,7 @@ using Common;
 
 namespace Day5;
 
-class Solver : ISolver<(List<PageOrderingRule> Rules, List<int[]> Pages)>
+class Solver : ISolverLegacy<(List<PageOrderingRule> Rules, List<int[]> Pages)>
 {
   public (List<PageOrderingRule> Rules, List<int[]> Pages) Parse(string[] input)
   {

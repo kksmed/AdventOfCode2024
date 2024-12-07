@@ -4,7 +4,7 @@ using Common;
 
 namespace Day3;
 
-public partial class Solver : ISolver<IEnumerable<(int, int)>>
+public partial class Solver : ISolverLegacy<IEnumerable<(int, int)>>
 {
   readonly Regex regex = MyRegex();
 

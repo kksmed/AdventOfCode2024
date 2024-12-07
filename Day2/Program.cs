@@ -31,5 +31,5 @@ var example =
 //
 Console.WriteLine("## Second solver ##");
 var solver2 = new Solver2();
-Solving.SolveExample(solver2, example);
-Solving.Solve(solver2);
+SolvingLegacy.SolveExample(solver2, example);
+SolvingLegacy.Solve(solver2);

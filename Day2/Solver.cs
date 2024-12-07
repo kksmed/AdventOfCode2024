@@ -2,7 +2,7 @@ using Common;
 
 namespace Day2;
 
-public class Solver : ISolver<int[][]>
+public class Solver : ISolverLegacy<int[][]>
 {
   public int[][] Parse(string[] input) => input.Select(x => x.Split(' ').Select(int.Parse).ToArray()).ToArray();
 

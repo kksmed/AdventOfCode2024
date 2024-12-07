@@ -14,6 +14,6 @@ var example =
 
 var solver = new Solver();
 
-Solving.SolveExample(solver, example);
+SolvingLegacy.SolveExample(solver, example);
 
-Solving.Solve(solver);
+SolvingLegacy.Solve(solver);

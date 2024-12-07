@@ -35,5 +35,5 @@ var example =
   """;
 
 Solver solver = new();
-Solving.SolveExample(solver, example);
-Solving.Solve(solver);
+SolvingLegacy.SolveExample(solver, example);
+SolvingLegacy.Solve(solver);

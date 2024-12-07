@@ -1,20 +1,20 @@
 namespace Common;
 
-public static class Solving
+public static class SolvingLegacy
 {
-  public static int SolveExample<T>(ISolver<T> solver, string example)
+  public static int SolveExample<T>(ISolverLegacy<T> solver, string example)
   {
     Console.WriteLine("Example:");
     return SolveFirstThenSecond(solver, example.Split(Environment.NewLine));
   }
 
-  public static int Solve<T>(ISolver<T> solver)
+  public static int Solve<T>(ISolverLegacy<T> solver)
   {
     Console.WriteLine("Real input:");
     return SolveFirstThenSecond(solver, File.ReadAllLines("input.txt"));
   }
 
-  static int SolveFirstThenSecond<T>(ISolver<T> solver, string[] input)
+  static int SolveFirstThenSecond<T>(ISolverLegacy<T> solver, string[] input)
   {
     Console.WriteLine($"Day: {solver.GetType().Namespace}");
 
