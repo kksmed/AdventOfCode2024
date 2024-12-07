@@ -33,8 +33,23 @@ public class Solver : ISolverLong<IEnumerable<(long TestValue, List<long> Number
     return IsPossible(currentValue + n, testValue, rest) || IsPossible(currentValue * n, testValue, rest);
   }
 
-  public long? SolveSecond(IEnumerable<(long TestValue, List<long> Numbers)> data)
+  public long? SolveSecond(IEnumerable<(long TestValue, List<long> Numbers)> data) =>
+    data.Where(IsPossible2).Select(x => x.TestValue).Sum();
+
+  static bool IsPossible2((long TestValue, List<long> Numbers) arg) =>
+    IsPossible2(arg.Numbers[0], arg.TestValue, arg.Numbers.Skip(1).ToList());
+
+  static bool IsPossible2(long currentValue, long testValue, List<long> numbers)
   {
-    return null;
+    if (currentValue > testValue) return false;
+
+    if (numbers.Count == 0)
+      return currentValue == testValue;
+
+    var n = numbers[0];
+    var rest = numbers.Skip(1).ToList();
+    return IsPossible2(currentValue + n, testValue, rest)
+      || IsPossible2(currentValue * n, testValue, rest)
+      || IsPossible2(long.Parse($"{currentValue}{n}"), testValue, rest);
   }
 }
