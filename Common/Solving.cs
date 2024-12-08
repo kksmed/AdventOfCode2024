@@ -24,7 +24,8 @@ public static class Solving
     IParser<T2Data>? parserPart2 = null,
     ISolver<T2Data, T2Result>? solverPart2 = null)
   {
-    Console.WriteLine($"### {(solverPart1 as object ?? parserPart1).GetType().Namespace} ###");
+    var definingType = (solverPart1 as object ?? parserPart1).GetType();
+    Console.WriteLine($"### {definingType.Namespace ?? definingType.Assembly.GetName().Name} ###");
     Console.WriteLine("## Part 1 ##");
     var exampleInput = example.Split(Environment.NewLine);
     var exampleDataPart1 = parserPart1.Parse(exampleInput);
