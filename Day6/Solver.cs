@@ -4,17 +4,15 @@ using Common;
 
 namespace Day6;
 
-public class Solver : ISolverLegacy<char[,]>
+public class Solver1 : ISolver<char[,], int>
 {
-  public char[,] Parse(string[] input) => Parsing.ParseToCharMap(input);
-
-  public int SolveFirst(char[,] data)
+  public virtual int Solve(char[,] data)
   {
     var position = FindStart(data);
     var direction = Direction.Up;
     var count = 0;
     var map = (char[,])data.Clone();
-    while (InBounds(position, map))
+    while (map.InBounds(position))
     {
       var c = map[position.X, position.Y];
 
@@ -40,7 +38,7 @@ public class Solver : ISolverLegacy<char[,]>
     return count;
   }
 
-  static Point Move(Point point, Direction direction)
+  protected static Point Move(Point point, Direction direction)
   {
     return direction switch
       {
@@ -52,7 +50,7 @@ public class Solver : ISolverLegacy<char[,]>
       };
   }
 
-  static (Point Position, Direction Direction) ChangeDirection(Point position, Direction direction)
+  protected static (Point Position, Direction Direction) ChangeDirection(Point position, Direction direction)
   {
     return direction switch
       {
@@ -66,9 +64,7 @@ public class Solver : ISolverLegacy<char[,]>
     (Point Position, Direction Direction) Go(Direction d1, Direction d2) => (Move(Move(position, d1), d2), d2);
   }
 
-  static bool InBounds(Point p, char[,] map) => p.X >= 0 && p.X < map.GetLength(0) && p.Y >= 0 && p.Y < map.GetLength(1);
-
-  static Point FindStart(char[,] data)
+  protected static Point FindStart(char[,] data)
   {
     for (var x = 0; x < data.GetLength(0); x++)
     {
@@ -84,7 +80,18 @@ public class Solver : ISolverLegacy<char[,]>
     throw new ArgumentException("No start found", nameof(data));
   }
 
-  public int? SolveSecond(char[,] data)
+  protected enum Direction
+  {
+    Up,
+    Down,
+    Left,
+    Right
+  }
+}
+
+public class Solver2 : Solver1
+{
+  public override int Solve(char[,] data)
   {
     var maxSteps = (data.Cast<char>().Count(x => x == '.') + 1) * 4;
     var start = FindStart(data);
@@ -102,7 +109,7 @@ public class Solver : ISolverLegacy<char[,]>
         var steps = 0;
         var direction = Direction.Up;
         var position = start;
-        while (InBounds(position, data) && steps < maxSteps)
+        while (data.InBounds(position) && steps < maxSteps)
         {
           var p = map[position.X, position.Y];
 
@@ -130,10 +137,4 @@ public class Solver : ISolverLegacy<char[,]>
   }
 }
 
-enum Direction
-{
-  Up,
-  Down,
-  Left,
-  Right
-}
+
