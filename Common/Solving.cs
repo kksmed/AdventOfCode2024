@@ -37,7 +37,7 @@ public static class Solving
     }
 
     var exampleAnswerPart1 = solverPart1.Solve(exampleDataPart1);
-    Console.WriteLine($"# Example: {exampleAnswerPart1}");
+    Console.WriteLine($"# Example (1): {exampleAnswerPart1}");
 
     var input = File.ReadAllLines("input.txt");
     var dataPart1 = parserPart1.Parse(input);
@@ -79,7 +79,7 @@ public static class Solving
     }
 
     var exampleAnswerPart2 = solverPart2.Solve(exampleDataPart2);
-    Console.WriteLine($"# Example: {exampleAnswerPart2}");
+    Console.WriteLine($"# Example (2): {exampleAnswerPart2}");
 
     var answerPart2 = solverPart2.Solve(dataPart2);
     Console.WriteLine($"# Answer (2): {answerPart2}");
