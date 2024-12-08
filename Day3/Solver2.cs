@@ -4,7 +4,7 @@ using Common;
 
 namespace Day3;
 
-public partial class Solver2 : ISolverLegacy<IEnumerable<IInstruction>>
+public partial class Solver2 : IParser<IEnumerable<IInstruction>>, ISolver<IEnumerable<IInstruction>, int>
 {
   readonly Regex regex = MyRegex();
 
@@ -21,7 +21,7 @@ public partial class Solver2 : ISolverLegacy<IEnumerable<IInstruction>>
             _ => throw new ArgumentOutOfRangeException(nameof(input), $"Unknown instruction: {match.Groups[0].Value}")
           });
 
-  public int SolveFirst(IEnumerable<IInstruction> data)
+  public int Solve(IEnumerable<IInstruction> data)
   {
     var sum = 0;
     var doMul = true;
@@ -38,7 +38,7 @@ public partial class Solver2 : ISolverLegacy<IEnumerable<IInstruction>>
         case Mul mul when doMul:
           sum += mul.A * mul.B;
           break;
-        case Mul mul when !doMul:
+        case Mul when !doMul:
           continue;
         default:
           throw new ArgumentOutOfRangeException(nameof(data), $"Unknown instruction: {instruction}");
@@ -47,13 +47,11 @@ public partial class Solver2 : ISolverLegacy<IEnumerable<IInstruction>>
     return sum;
   }
 
-  public int? SolveSecond(IEnumerable<IInstruction> data) => null;
-
   [GeneratedRegex(@"(mul\((\d+),(\d+)\))|(do\(\))|(don't\(\))")]
   private static partial Regex MyRegex();
 }
 
-public interface IInstruction { }
+public interface IInstruction;
 record Mul(int A, int B) : IInstruction;
-record Do() : IInstruction;
-record Dont() : IInstruction;
+record Do : IInstruction;
+record Dont : IInstruction;
