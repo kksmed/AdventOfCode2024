@@ -16,6 +16,4 @@ var example =
   MXMXAXMASX
   """;
 
-Solver solver = new();
-SolvingLegacy.SolveExample(solver, example);
-SolvingLegacy.Solve(solver);
+Solving.Go(example, new CharMapParser(), new Solver1(), new Solver2());

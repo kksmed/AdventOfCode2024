@@ -4,11 +4,9 @@ using Common;
 
 namespace Day4;
 
-public class Solver : ISolverLegacy<char[,]>
+public class Solver1 : ISolver<char[,], int>
 {
-  public char[,] Parse(string[] input) => Parsing.ParseToCharMap(input);
-
-  public int SolveFirst(char[,] data)
+  public virtual int Solve(char[,] data)
   {
     var count = 0;
     for(var x = 0; x < data.GetLength(0); x++)
@@ -57,8 +55,11 @@ public class Solver : ISolverLegacy<char[,]>
 
     bool CheckPoint(char c, Point p) => p.X >= 0 && p.X < maxX && p.Y >= 0 && p.Y < maxY && chars[p.X, p.Y] == c;
   }
+}
 
-  public int? SolveSecond(char[,] data)
+public class Solver2 : Solver1
+{
+  public override int Solve(char[,] data)
   {
     var count = 0;
     for(var x = 0; x < data.GetLength(0); x++)
