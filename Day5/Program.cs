@@ -34,6 +34,4 @@ var example =
   97,13,75,29,47
   """;
 
-Solver solver = new();
-SolvingLegacy.SolveExample(solver, example);
-SolvingLegacy.Solve(solver);
+Solving.Go(example, new Parser(), new Solver1(), new Solver2());

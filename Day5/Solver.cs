@@ -2,7 +2,7 @@ using Common;
 
 namespace Day5;
 
-class Solver : ISolverLegacy<(List<PageOrderingRule> Rules, List<int[]> Pages)>
+class Parser : IParser<(List<PageOrderingRule> Rules, List<int[]> Pages)>
 {
   public (List<PageOrderingRule> Rules, List<int[]> Pages) Parse(string[] input)
   {
@@ -31,11 +31,13 @@ class Solver : ISolverLegacy<(List<PageOrderingRule> Rules, List<int[]> Pages)>
 
     return (rules, pages);
   }
-
-  public int SolveFirst((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
+}
+class Solver1 : ISolver<(List<PageOrderingRule> Rules, List<int[]> Pages), int>
+{
+  public virtual int Solve((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
     data.Pages.Where(x => IsCorrectOrder(data.Rules, x)).Select(Middle).Sum();
 
-  static bool IsCorrectOrder(List<PageOrderingRule> rules, int[] pages)
+  protected static bool IsCorrectOrder(List<PageOrderingRule> rules, int[] pages)
   {
     for (var i = 1; i < pages.Length; i++)
     {
@@ -50,9 +52,12 @@ class Solver : ISolverLegacy<(List<PageOrderingRule> Rules, List<int[]> Pages)>
     return true;
   }
 
-  static int Middle(int[] list) => list[list.Length / 2];
+  protected static int Middle(int[] list) => list[list.Length / 2];
+}
 
-  public int? SolveSecond((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
+class Solver2 : Solver1
+{
+  public override int Solve((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
     data.Pages.Where(x => !IsCorrectOrder(data.Rules, x)).Select(x => FixOrder(data.Rules, x)).Select(Middle).Sum();
 
   static int[] FixOrder(List<PageOrderingRule> rules, int[] pages) =>
