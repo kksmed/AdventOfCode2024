@@ -2,17 +2,11 @@ using Common;
 
 namespace Day2;
 
-public class Solver : ISolverLegacy<int[][]>
+public class Solver : ISolver<int[][], int>
 {
-  public int[][] Parse(string[] input) => input.Select(x => x.Split(' ').Select(int.Parse).ToArray()).ToArray();
+  public virtual int Solve(int[][] data) => data.Count(report => IsSafe(report));
 
-  public int SolveFirst(int[][] data) => data.Count(report => IsSafe(report));
-
-  public int? SolveSecond(int[][] data) => data.Count(IsSafe2);
-
-  public static bool IsSafe2(int[] report) => IsSafe(report, true) || IsSafe(report.Skip(1).ToArray());
-
-  static bool IsSafe(int[] report, bool withDampening = false)
+  protected static bool IsSafe(int[] report, bool withDampening = false)
   {
     var problemDampened = !withDampening;
     var previous = report.First();
@@ -59,4 +53,11 @@ public class Solver : ISolverLegacy<int[][]>
 
     return true;
   }
+}
+
+public class SolverPart2 : Solver
+{
+  public override int Solve(int[][] data) => data.Count(IsSafe2);
+
+  public static bool IsSafe2(int[] report) => IsSafe(report, true) || IsSafe(report.Skip(1).ToArray());
 }

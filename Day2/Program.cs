@@ -12,23 +12,25 @@ var example =
   1 3 6 7 9
   """;
 
-// var solver = new Solver();
-// var data = solver.Parse(File.ReadAllLines("input.txt"));
-// foreach (var record in data)
-// {
-//   if (Solver.IsSafe2(record) != Solver2.IsSafe2(record))
-//   {
-//     Console.WriteLine("Different results");
-//     Console.WriteLine(string.Join(" ", record));
-//     Console.WriteLine(Solver.IsSafe2(record));
-//     Console.WriteLine(Solver2.IsSafe2(record));
-//   }
-// }
-// Console.WriteLine("## First solver ##");
-// var solver = new Solver();
-// Solving.SolveExample(solver, example);
-// Solving.Solve(solver);
-//
-Console.WriteLine("## Second solver ##");
+var parser = new Parser();
+var solver = new Solver();
+var data = parser.Parse(File.ReadAllLines("input.txt"));
+foreach (var record in data)
+{
+  if (SolverPart2.IsSafe2(record) != Solver2Part2.IsSafe2(record))
+  {
+    Console.WriteLine("Different results");
+    Console.WriteLine(string.Join(" ", record));
+    Console.WriteLine(SolverPart2.IsSafe2(record));
+    Console.WriteLine(Solver2Part2.IsSafe2(record));
+  }
+}
+
+Console.WriteLine("");
+Console.WriteLine("#### First solver ####");
+Solving.Go(example, new Parser(), new Solver(), new SolverPart2());
+
+Console.WriteLine("");
+Console.WriteLine("#### Second solver ####");
 
 Solving.Go(example, new Parser(), new Solver2Part1(), new Solver2Part2());

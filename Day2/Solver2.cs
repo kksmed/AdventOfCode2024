@@ -2,11 +2,6 @@ using Common;
 
 namespace Day2;
 
-public class Parser : IParser<int[][]>
-{
-  public int[][] Parse(string[] input) => input.Select(x => x.Split(' ').Select(int.Parse).ToArray()).ToArray();
-}
-
 public class Solver2Part1 : ISolver<int[][], int>
 {
   public virtual int Solve(int[][] data) => data.Count(IsSafe);
@@ -21,6 +16,6 @@ public class Solver2Part2 : Solver2Part1
 {
   public override int Solve(int[][] data) => data.Count(IsSafe2);
 
-  static bool IsSafe2(int[] report) => IsSafe(report) || Enumerable.Range(0, report.Length)
+  public static bool IsSafe2(int[] report) => IsSafe(report) || Enumerable.Range(0, report.Length)
     .Any(x => IsSafe(report.Take(x).Concat(report.Skip(x + 1)).ToArray()));
 }
