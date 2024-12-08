@@ -30,6 +30,5 @@ var example =
 // Solving.Solve(solver);
 //
 Console.WriteLine("## Second solver ##");
-var solver2 = new Solver2();
-SolvingLegacy.SolveExample(solver2, example);
-SolvingLegacy.Solve(solver2);
+
+Solving.Go(example, new Parser(), new Solver2Part1(), new Solver2Part2());
