@@ -19,7 +19,24 @@ var example =
   ............
   """;
 
-Solving.Go(example, new CharMapParser(), new Part1());
+Solving.Go(example, new CharMapParser(), new Part1(), new Part2());
+
+Console.WriteLine("");
+var example2 =
+  """
+  T.........
+  ...T......
+  .T........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  ..........
+  """;
+
+Solving.Go(example2, new CharMapParser(), new Part2());
 
 class Part1 : ISolver<char[,], int>
 {
@@ -59,7 +76,7 @@ class Part1 : ISolver<char[,], int>
     }
   }
 
-  static IEnumerable<Point> FindAntinodes(Point a1, Point a2, char[,] map)
+  protected virtual IEnumerable<Point> FindAntinodes(Point a1, Point a2, char[,] map)
   {
     var diff = (X: a1.X - a2.X, Y: a1.Y - a2.Y);
 
@@ -70,10 +87,32 @@ class Part1 : ISolver<char[,], int>
     antinode = Minus(a2, diff);
     if (map.InBounds(antinode))
       yield return antinode;
+  }
 
-    yield break;
+  protected static Point Plus(Point p, (int X, int Y) d) => new(p.X + d.X, p.Y + d.Y);
+  protected static Point Minus(Point p, (int X, int Y) d) => new(p.X - d.X, p.Y - d.Y);
+}
 
-    Point Plus(Point p, (int X, int Y) d) => new(p.X + d.X, p.Y + d.Y);
-    Point Minus(Point p, (int X, int Y) d) => new(p.X - d.X, p.Y - d.Y);
+class Part2 : Part1
+{
+  protected override IEnumerable<Point> FindAntinodes(Point a1, Point a2, char[,] map)
+  {
+    yield return a1;
+    yield return a2;
+    var diff = (X: a1.X - a2.X, Y: a1.Y - a2.Y);
+
+    var antinode = Plus(a1, diff);
+    while (map.InBounds(antinode))
+    {
+      yield return antinode;
+      antinode = Plus(antinode, diff);
+    }
+
+    antinode = Minus(a2, diff);
+    while (map.InBounds(antinode))
+    {
+      yield return antinode;
+      antinode = Minus(antinode, diff);
+    }
   }
 }
