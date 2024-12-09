@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Common;
 
 public static class Solving
@@ -24,6 +26,7 @@ public static class Solving
     IParser<T2Data>? parserPart2 = null,
     ISolver<T2Data, T2Result>? solverPart2 = null)
   {
+    var sw = Stopwatch.StartNew();
     var definingType = (solverPart1 as object ?? parserPart1).GetType();
     Console.WriteLine($"### {definingType.Namespace ?? definingType.Assembly.GetName().Name} ###");
     Console.WriteLine("## Part 1 ##");
@@ -83,5 +86,8 @@ public static class Solving
 
     var answerPart2 = solverPart2.Solve(dataPart2);
     Console.WriteLine($"# Answer (2): {answerPart2}");
+
+    Console.WriteLine("");
+    Console.WriteLine($"Evaluated in: {sw.Elapsed}");
   }
 }
