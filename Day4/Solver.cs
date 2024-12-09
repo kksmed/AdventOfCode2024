@@ -6,7 +6,9 @@ namespace Day4;
 
 public class Solver1 : ISolver<char[,], int>
 {
-  public virtual int Solve(char[,] data)
+  protected virtual char PatternStarter => 'X';
+
+  public int Solve(char[,] data)
   {
     var count = 0;
     for(var x = 0; x < data.GetLength(0); x++)
@@ -14,7 +16,7 @@ public class Solver1 : ISolver<char[,], int>
       for(var y = 0; y < data.GetLength(1); y++)
       {
         var c = data[x, y];
-        if (c != 'X') continue;
+        if (c != PatternStarter) continue;
 
         var candidates = DetermineCandidates(new(x, y));
         var matches = candidates.Count(candidate => CheckCandidate(data, candidate));
@@ -25,60 +27,42 @@ public class Solver1 : ISolver<char[,], int>
     return count;
   }
 
-  static IEnumerable<(Point M, Point A, Point S)> DetermineCandidates(Point p)
+  protected virtual IEnumerable<(Point, char)[]> DetermineCandidates(Point p)
   {
     var (x, y) = (p.X, p.Y);
     // Forward
-    yield return (new(x + 1, y), new(x + 2, y), new(x + 3, y));
+    yield return [(new(x + 1, y), 'M'), (new(x + 2, y), 'A'), (new(x + 3, y),'S')];
     // Backward
-    yield return (new(x - 1, y), new(x - 2, y), new(x - 3, y));
+    yield return [(new(x - 1, y), 'M'), (new(x - 2, y), 'A'), (new(x - 3, y),'S')];
     // Downward
-    yield return (new(x, y + 1), new(x, y + 2), new(x, y + 3));
+    yield return [(new(x, y + 1), 'M'), (new(x, y + 2), 'A'), (new(x, y + 3),'S')];
     // Upward
-    yield return (new(x, y - 1), new(x, y - 2), new(x, y - 3));
+    yield return [(new(x, y - 1), 'M'), (new(x, y - 2), 'A'), (new(x, y - 3),'S')];
     // Diagonal Downward Right
-    yield return (new(x + 1, y + 1), new(x + 2, y + 2), new(x + 3, y + 3));
+    yield return [(new(x + 1, y + 1), 'M'), (new(x + 2, y + 2), 'A'), (new(x + 3, y + 3),'S')];
     // Diagonal Downward Left
-    yield return (new(x + 1, y - 1), new(x + 2, y - 2), new(x + 3, y - 3));
+    yield return [(new(x + 1, y - 1), 'M'), (new(x + 2, y - 2), 'A'), (new(x + 3, y - 3),'S')];
     // Diagonal Upward Right
-    yield return (new(x - 1, y + 1), new(x - 2, y + 2), new(x - 3, y + 3));
+    yield return [(new(x - 1, y + 1), 'M'), (new(x - 2, y + 2), 'A'), (new(x - 3, y + 3),'S')];
     // Diagonal Upward Left
-    yield return (new(x - 1, y - 1), new(x - 2, y - 2), new(x - 3, y - 3));
+    yield return [(new(x - 1, y - 1), 'M'), (new(x - 2, y - 2), 'A'), (new(x - 3, y - 3),'S')];
   }
 
-  static bool CheckCandidate(char[,] chars, (Point M, Point A, Point S) candidate)
+  static bool CheckCandidate(char[,] chars, IEnumerable<(Point Point, char C)> candidate)
   {
     var maxX = chars.GetLength(0);
     var maxY = chars.GetLength(1);
-    var (m, a, s) = candidate;
-    return CheckPoint('M', m) && CheckPoint('A', a) && CheckPoint('S', s);
+    return candidate.All(x => CheckPoint(x.Point, x.C));
 
-    bool CheckPoint(char c, Point p) => p.X >= 0 && p.X < maxX && p.Y >= 0 && p.Y < maxY && chars[p.X, p.Y] == c;
+    bool CheckPoint(Point p, char c) => p.X >= 0 && p.X < maxX && p.Y >= 0 && p.Y < maxY && chars[p.X, p.Y] == c;
   }
 }
 
 public class Solver2 : Solver1
 {
-  public override int Solve(char[,] data)
-  {
-    var count = 0;
-    for(var x = 0; x < data.GetLength(0); x++)
-    {
-      for(var y = 0; y < data.GetLength(1); y++)
-      {
-        var c = data[x, y];
-        if (c != 'A') continue;
+  protected override char PatternStarter => 'A';
 
-        var candidates = DetermineCandidates2(new(x, y));
-        var matches = candidates.Count(candidate => CheckCandidate2(data, candidate));
-        count += matches;
-      }
-    }
-
-    return count;
-  }
-
-  static IEnumerable<(Point M1, Point M2, Point S1, Point S2)> DetermineCandidates2(Point p)
+  protected override IEnumerable<(Point, char)[]> DetermineCandidates(Point p)
   {
     var (x, y) = (p.X, p.Y);
     var topLeft = new Point(x - 1, y - 1);
@@ -86,22 +70,12 @@ public class Solver2 : Solver1
     var bottomLeft = new Point(x - 1, y + 1);
     var bottomRight = new Point(x + 1, y + 1);
     // Downward
-    yield return (topLeft, topRight, bottomLeft, bottomRight);
+    yield return [(topLeft, 'M'), (topRight, 'M'), (bottomLeft, 'S'), (bottomRight, 'S')];
     // Upward
-    yield return (bottomLeft, bottomRight, topLeft, topRight);
+    yield return [(bottomLeft, 'M'), (bottomRight, 'M'), (topLeft, 'S'), (topRight, 'S')];
     // Forward
-    yield return (topLeft, bottomLeft, topRight, bottomRight);
+    yield return [(topLeft, 'M'), (bottomLeft, 'M'), (topRight, 'S'), (bottomRight, 'S')];
     // Backward
-    yield return (topRight, bottomRight, topLeft, bottomLeft);
-  }
-
-  static bool CheckCandidate2(char[,] chars, (Point M1, Point M2, Point S1, Point S2) candidate)
-  {
-    var maxX = chars.GetLength(0);
-    var maxY = chars.GetLength(1);
-    var (m1, m2, s1, s2) = candidate;
-    return CheckPoint('M', m1) && CheckPoint('M', m2) && CheckPoint('S', s1) && CheckPoint('S', s2);
-
-    bool CheckPoint(char c, Point p) => p.X >= 0 && p.X < maxX && p.Y >= 0 && p.Y < maxY && chars[p.X, p.Y] == c;
+    yield return [(topRight, 'M'), (bottomRight, 'M'), (topLeft, 'S'), (bottomLeft, 'S')];
   }
 }
