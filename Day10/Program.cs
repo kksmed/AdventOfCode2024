@@ -15,13 +15,13 @@ var example =
   10456732
   """;
 
-Solving.Go(example, new IntMapParser(), new Solver());
+Solving.Go(example, new IntMapParser(), new Solver(), new Solver2());
 
 public class Solver : ISolver<int[,], int>
 {
-  public int Solve(int[,] data) => FindTrailheads(data).Select(x => FindTops(data, x).Distinct().Count()).Sum();
+  public virtual int Solve(int[,] data) => FindTrailheads(data).Select(x => FindTops(data, x).Distinct().Count()).Sum();
 
-  static IEnumerable<Point> FindTrailheads(int[,] map)
+  protected static IEnumerable<Point> FindTrailheads(int[,] map)
   {
     for (var x = 0; x < map.GetLength(0); x++)
     for (var y = 0; y < map.GetLength(1); y++)
@@ -29,7 +29,7 @@ public class Solver : ISolver<int[,], int>
         yield return new(x, y);
   }
 
-  static IEnumerable<Point> FindTops(int[,] map, Point trailhead)
+  protected static IEnumerable<Point> FindTops(int[,] map, Point trailhead)
   {
     var value = map[trailhead.X, trailhead.Y];
     return FindTopsInner(trailhead, value);
@@ -59,4 +59,9 @@ public class Solver : ISolver<int[,], int>
           yield return top;
     }
   }
+}
+
+public class Solver2 : Solver
+{
+  public override int Solve(int[,] data) => FindTrailheads(data).Select(x => FindTops(data, x).Count()).Sum();
 }
