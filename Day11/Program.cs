@@ -1,0 +1,49 @@
+﻿using Common;
+
+var example= "125 17";
+  
+Solving.Go(example, new Parser(), new Solver());
+
+public class Parser : IParser<int[]>
+{
+  public int[] Parse(string[] values) => values.SelectMany(x => x.Split(' ')).Select(int.Parse).ToArray();
+}
+
+public class Solver : ISolver<int[], int>
+{
+  public int Solve(int[] values)
+  {
+    const int blinks = 25;
+
+    var stones = values.Select(x => (long)x);
+    for (var i = 0; i < blinks; i++)
+    {
+      stones = Blink(stones);
+    }
+    return stones.Count();
+  }
+
+  static IEnumerable<long> Blink(IEnumerable<long> stones)
+  {
+    foreach (var stone in stones)
+    {
+      if (stone == 0)
+      {
+        yield return 1;
+        continue;
+      }
+
+      var engraving = stone.ToString();
+      var digits = engraving.Length;
+      if (digits % 2 == 0)
+      {
+        var half = digits / 2;
+        yield return long.Parse(engraving[..half]);
+        yield return long.Parse(engraving[half..]);
+        continue;
+      }
+
+      yield return stone * 2024;
+    }
+  }
+}
