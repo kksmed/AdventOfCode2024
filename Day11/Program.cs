@@ -12,46 +12,47 @@ var data = new Parser().Parse(input);
 var answer = new Solver2().Solve(data);
 Console.WriteLine($"# Answer Part 2: {answer}");
 Console.WriteLine($"# In: {total.Elapsed}");
-public class Parser : IParser<string[]>
+public class Parser : IParser<int[]>
 {
-  public string[] Parse(string[] values) => values.SelectMany(x => x.Split(' ')).ToArray();
+  public int[] Parse(string[] values) => values.SelectMany(x => x.Split(' ')).Select(int.Parse).ToArray();
 }
 
-public class Solver : ISolver<string[], int>
+public class Solver : ISolver<int[], int>
 {
   protected virtual int Blinks => 25;
-  public int Solve(string[] values)
+  public int Solve(int[] values)
   {
-    var stones = values.ToList();
+    var stones = values.Select(x => (long)x);
     for (var i = 0; i < Blinks; i++)
     {
       var sw = Stopwatch.StartNew();
       stones = Blink(stones).ToList();
-      Console.WriteLine($"Blink {i} {stones.Count} in {sw.ElapsedMilliseconds}ms");
+      Console.WriteLine($"Blink {i} {stones.Count()} in {sw.ElapsedMilliseconds}ms");
     }
     return stones.Count();
   }
 
-  static IEnumerable<string> Blink(IEnumerable<string> stones)
+  static IEnumerable<long> Blink(IEnumerable<long> stones)
   {
     foreach (var stone in stones)
     {
-      if (stone == "0")
+      if (stone == 0)
       {
-        yield return "1";
+        yield return 1;
         continue;
       }
 
-      var digits = stone.Length;
+      var engraving = stone.ToString();
+      var digits = engraving.Length;
       if (digits % 2 == 0)
       {
         var half = digits / 2;
-        yield return stone[..half];
-        yield return stone[half..].TrimStart('0');
+        yield return long.Parse(engraving[..half]);
+        yield return long.Parse(engraving[half..]);
         continue;
       }
 
-      yield return (long.Parse(stone) * 2024).ToString();
+      yield return stone * 2024;
     }
   }
 }
