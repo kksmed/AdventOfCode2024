@@ -9,7 +9,7 @@ var example= "125 17";
 var total = Stopwatch.StartNew();
 var input = File.ReadAllLines("input.txt");
 var data = new Parser().Parse(input);
-var answer = new SolverDepthFirst().Solve(data);
+var answer = new SolverDepthFirstWithCache().Solve(data);
 Console.WriteLine($"# Answer Part 2: {answer}");
 Console.WriteLine($"# In: {total.Elapsed}");
 public class Parser : IParser<int[]>
@@ -62,32 +62,41 @@ public class Solver2 : Solver
   protected override int Blinks => 40;
 }
 
-public class SolverDepthFirst : ISolver<int[], int>
+public class SolverDepthFirstWithCache : ISolver<int[], int>
 {
-  protected virtual int Blinks => 40;
-  public int Solve(int[] values)
-  {
-    var count = 0;
-    foreach (var stone in values)
-    {
-      var sw = Stopwatch.StartNew();
-      List<(long Engraving, int Blinks)> stones = [(stone, 0)];
-      for(var i = 0; i < stones.Count; i++)
-      {
-        var (engraving, blinks) = stones[i];
-        for (var b = blinks + 1; b <= Blinks; b++)
-        {
-           (engraving, var extra) = Blink(engraving);
-            if (extra.HasValue)
-              stones.Add((extra.Value, b));
-        }
-      }
+  Dictionary<long, List<(int Blinks, List<long> Stones)>> cache = new();
 
-      count += stones.Count;
-      Console.WriteLine($"Blink {count} {stone} in {sw.Elapsed}");
+  static int Blinks => 40;
+
+  public int Solve(int[] values) => values.Sum(stone => CountStones(stone, 0));
+
+  int CountStones(long stone, int blinks)
+  {
+    List<(long Engraving, int Blinks)> stones = [];
+    if (cache.TryGetValue(stone, out var cachedValue))
+    {
+      stones = cachedValue;
+    }
+    else
+    {
+      stones.Add((stone, blinks));
+      cache[stone] = stones;
+    }
+      return stones.Count;
+    
+    for(var i = 0; i < stones.Count; i++)
+    {
+      var (engraving, blinksSoFar) = stones[i];
+      for (var b = blinksSoFar + 1; b <= Blinks; b++)
+      {
+        (engraving, var extra) = Blink(engraving);
+        if (extra.HasValue)
+          stones.Add((extra.Value, b));
+      }
     }
 
-    return count;
+    count += stones.Count;
+    Console.WriteLine($"Blink {count} {stone} in {sw.Elapsed}");
   }
 
   static (long, long?) Blink(long stone)
