@@ -1,8 +1,8 @@
 ﻿using Common;
 
 var example= "125 17";
-  
-Solving.Go(example, new Parser(), new Solver());
+
+Solving.Go(example, new Parser(), new Solver(), new Solver2());
 
 public class Parser : IParser<int[]>
 {
@@ -11,12 +11,11 @@ public class Parser : IParser<int[]>
 
 public class Solver : ISolver<int[], int>
 {
+  protected virtual int Blinks => 25;
   public int Solve(int[] values)
   {
-    const int blinks = 25;
-
     var stones = values.Select(x => (long)x);
-    for (var i = 0; i < blinks; i++)
+    for (var i = 0; i < Blinks; i++)
     {
       stones = Blink(stones);
     }
@@ -46,4 +45,9 @@ public class Solver : ISolver<int[], int>
       yield return stone * 2024;
     }
   }
+}
+
+public class Solver2 : Solver
+{
+  protected override int Blinks => 75;
 }
