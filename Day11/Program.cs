@@ -9,7 +9,7 @@ var example= "125 17";
 var total = Stopwatch.StartNew();
 var input = File.ReadAllLines("input.txt");
 var data = new Parser().Parse(input);
-var answer = new Solver2().Solve(data);
+var answer = new SolverDepthFirst().Solve(data);
 Console.WriteLine($"# Answer Part 2: {answer}");
 Console.WriteLine($"# In: {total.Elapsed}");
 public class Parser : IParser<int[]>
@@ -60,4 +60,61 @@ public class Solver : ISolver<int[], int>
 public class Solver2 : Solver
 {
   protected override int Blinks => 40;
+}
+
+public class SolverDepthFirst : ISolver<int[], int>
+{
+  protected virtual int Blinks => 40;
+  public int Solve(int[] values)
+  {
+    var count = 0;
+    foreach (var stone in values)
+    {
+      var sw = Stopwatch.StartNew();
+      List<(long Engraving, int Blinks)> extras = [];
+      long engraving = stone;
+      for (var b = 0; b < Blinks; b++)
+      {
+        (engraving,var extra)  = Blink(engraving);
+        if (extra.HasValue)
+          extras.Add((extra.Value, b));
+      }
+
+      count++;
+
+      for(var i = 0; i < extras.Count; i++)
+      {
+        var (s2, blinks) = extras[i];
+        for (var b = blinks + 1; b < Blinks; b++)
+        {
+           (s2, var s3) = Blink(s2);
+            if (s3.HasValue)
+              extras.Add((s3.Value, b));
+        }
+      }
+
+      count += extras.Count;
+      Console.WriteLine($"Blink {count} {stone} in {sw.ElapsedMilliseconds}ms");
+    }
+
+    return count;
+  }
+
+  static (long, long?) Blink(long stone)
+  {
+    if (stone == 0)
+    {
+      return (1, null);
+    }
+
+    var engraving = stone.ToString();
+    var digits = engraving.Length;
+    if (digits % 2 == 0)
+    {
+      var half = digits / 2;
+      return (long.Parse(engraving[..half]), long.Parse(engraving[half..]));
+    }
+
+    return (stone * 2024, null);
+  }
 }
