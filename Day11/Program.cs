@@ -71,30 +71,20 @@ public class SolverDepthFirst : ISolver<int[], int>
     foreach (var stone in values)
     {
       var sw = Stopwatch.StartNew();
-      List<(long Engraving, int Blinks)> extras = [];
-      long engraving = stone;
-      for (var b = 0; b < Blinks; b++)
+      List<(long Engraving, int Blinks)> stones = [(stone, 0)];
+      for(var i = 0; i < stones.Count; i++)
       {
-        (engraving,var extra)  = Blink(engraving);
-        if (extra.HasValue)
-          extras.Add((extra.Value, b));
-      }
-
-      count++;
-
-      for(var i = 0; i < extras.Count; i++)
-      {
-        var (s2, blinks) = extras[i];
-        for (var b = blinks + 1; b < Blinks; b++)
+        var (engraving, blinks) = stones[i];
+        for (var b = blinks + 1; b <= Blinks; b++)
         {
-           (s2, var s3) = Blink(s2);
-            if (s3.HasValue)
-              extras.Add((s3.Value, b));
+           (engraving, var extra) = Blink(engraving);
+            if (extra.HasValue)
+              stones.Add((extra.Value, b));
         }
       }
 
-      count += extras.Count;
-      Console.WriteLine($"Blink {count} {stone} in {sw.ElapsedMilliseconds}ms");
+      count += stones.Count;
+      Console.WriteLine($"Blink {count} {stone} in {sw.Elapsed}");
     }
 
     return count;
@@ -118,3 +108,4 @@ public class SolverDepthFirst : ISolver<int[], int>
     return (stone * 2024, null);
   }
 }
+
