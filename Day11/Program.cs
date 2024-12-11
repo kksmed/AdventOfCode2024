@@ -9,7 +9,7 @@ var example= "125 17";
 var total = Stopwatch.StartNew();
 var input = File.ReadAllLines("input.txt");
 var data = new Parser().Parse(input);
-var answer = new SolverDepthFirstWithCache().Solve(data);
+var answer = new SolverWithTree().Solve(data);
 Console.WriteLine($"# Answer Part 2: {answer}");
 Console.WriteLine($"# In: {total.Elapsed}");
 public class Parser : IParser<int[]>
@@ -62,43 +62,80 @@ public class Solver2 : Solver
   protected override int Blinks => 40;
 }
 
-public class SolverDepthFirstWithCache : ISolver<int[], int>
+public class SolverWithTree : ISolver<int[], int>
 {
-  Dictionary<long, List<(int Blinks, List<long> Stones)>> cache = new();
-
-  static int Blinks => 40;
-
-  public int Solve(int[] values) => values.Sum(stone => CountStones(stone, 0));
-
-  int CountStones(long stone, int blinks)
+  Dictionary<long, Stone> cached = new();
+  protected virtual int Blinks => 40;
+  public int Solve(int[] values)
   {
-    List<(long Engraving, int Blinks)> stones = [];
-    if (cache.TryGetValue(stone, out var cachedValue))
+    var count = 0;
+    foreach (var stone in values)
     {
-      stones = cachedValue;
+      var sw = Stopwatch.StartNew();
+      List<(long Engraving, int Blinks)> stones = [(stone, 0)];
+      for(var i = 0; i < stones.Count; i++)
+      {
+        var (engraving, blinks) = stones[i];
+        if (cached.TryGetValue(engraving, out var cachedStone))
+        {
+          
+        }
+
+        for (var b = blinks + 1; b <= Blinks; b++)
+        {
+          (engraving, var extra) = Blink(engraving);
+          if (extra.HasValue)
+            stones.Add((extra.Value, b));
+        }
+      }
+
+      count += stones.Count;
+      Console.WriteLine($"Blink {count} {stone} in {sw.Elapsed}");
+    }
+
+    return count;
+  }
+
+  Stone BuildTree(long engraving, int blinks)
+  {
+    // Root element
+
+    for (int i = 0; i < blinks; i++)
+    {
+      if (cached.TryGetValue(engraving, out var cachedStone))
+      {
+
+    }
+      if (cachedStone.Next.HasValue)
+        return cachedStone.Next.Value.Count;
+      else
+      {
+        
+      }
     }
     else
     {
-      stones.Add((stone, blinks));
-      cache[stone] = stones;
+      
     }
-      return stones.Count;
     
-    for(var i = 0; i < stones.Count; i++)
-    {
-      var (engraving, blinksSoFar) = stones[i];
-      for (var b = blinksSoFar + 1; b <= Blinks; b++)
-      {
-        (engraving, var extra) = Blink(engraving);
-        if (extra.HasValue)
-          stones.Add((extra.Value, b));
-      }
-    }
-
-    count += stones.Count;
-    Console.WriteLine($"Blink {count} {stone} in {sw.Elapsed}");
   }
-
+  
+  int Count(Stone stone, int blinks)
+  {
+    var current = stone;
+    for(var b = 0; b < blinks; b++)
+    {
+      var next = stone.Next.Value;
+      if (stone.Next == null)
+        stone.Next = new[] { new Stone(Blink(stone.Engraving).Item1) };
+      else
+        stone.Next = stone.Next.Select(x => new Stone(Blink(x.Engraving).Item1)).ToArray();
+    }
+    if (stone.Next == null)
+      return 1;
+    return stone.Next.Sum(Count);
+  }
+  
   static (long, long?) Blink(long stone)
   {
     if (stone == 0)
@@ -118,3 +155,7 @@ public class SolverDepthFirstWithCache : ISolver<int[], int>
   }
 }
 
+record Stone(long Engraving)
+{
+  public (Stone, Stone?)? Next { get; set; }
+}
