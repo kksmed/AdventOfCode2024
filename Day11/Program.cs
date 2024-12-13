@@ -4,7 +4,7 @@ using Common;
 
 var example= "125 17";
 
-// Solving.Go(example, new Parser(), new Solver(), new Solver2());
+// Solving.Go(example, new Parser(), new SolverWithTree());
 
 var total = Stopwatch.StartNew();
 var input = File.ReadAllLines("input.txt");
@@ -19,17 +19,19 @@ public class Parser : IParser<int[]>
 
 public class Solver : ISolver<int[], int>
 {
-  protected virtual int Blinks => 25;
+  protected virtual int Blinks => 6;
   public int Solve(int[] values)
   {
-    var stones = values.Select(x => (long)x);
+    var stones = values.Select(x => (long)x).ToList();
     for (var i = 0; i < Blinks; i++)
     {
       var sw = Stopwatch.StartNew();
       stones = Blink(stones).ToList();
-      Console.WriteLine($"Blink {i} {stones.Count()} in {sw.ElapsedMilliseconds}ms");
+      // Console.WriteLine($"Blink {i} {stones.Count()} in {sw.ElapsedMilliseconds}ms");
     }
-    return stones.Count();
+
+    Console.WriteLine($"Stones: {string.Join(", ",stones)}");
+    return stones.Count;
   }
 
   static IEnumerable<long> Blink(IEnumerable<long> stones)
@@ -64,33 +66,22 @@ public class Solver2 : Solver
 
 public class SolverWithTree : ISolver<int[], int>
 {
-  Dictionary<long, Stone> cached = new();
-  protected virtual int Blinks => 40;
+  readonly Dictionary<long, Stone> treeCache = new();
+  readonly Dictionary<long, List<int>> countCache = new();
+
+  protected virtual int Blinks => 75;
+
   public int Solve(int[] values)
   {
     var count = 0;
     foreach (var stone in values)
     {
       var sw = Stopwatch.StartNew();
-      List<(long Engraving, int Blinks)> stones = [(stone, 0)];
-      for(var i = 0; i < stones.Count; i++)
-      {
-        var (engraving, blinks) = stones[i];
-        if (cached.TryGetValue(engraving, out var cachedStone))
-        {
-          
-        }
-
-        for (var b = blinks + 1; b <= Blinks; b++)
-        {
-          (engraving, var extra) = Blink(engraving);
-          if (extra.HasValue)
-            stones.Add((extra.Value, b));
-        }
-      }
-
-      count += stones.Count;
-      Console.WriteLine($"Blink {count} {stone} in {sw.Elapsed}");
+      var tree = BuildTree(stone, 0);
+      Console.WriteLine($"{stone}: Tree build in {sw.Elapsed}");
+      var subCount = Count(tree, 0);
+      Console.WriteLine($"{stone}: Count: {subCount} in {sw.Elapsed}");
+      count += subCount;
     }
 
     return count;
@@ -98,44 +89,68 @@ public class SolverWithTree : ISolver<int[], int>
 
   Stone BuildTree(long engraving, int blinks)
   {
-    // Root element
-
-    for (int i = 0; i < blinks; i++)
+    if (treeCache.TryGetValue(engraving, out var cachedStone))
     {
-      if (cached.TryGetValue(engraving, out var cachedStone))
-      {
+      ExpandTree(cachedStone, Blinks - blinks, blinks);
+      if (cachedStone.Depth < Blinks - blinks) throw new InvalidOperationException("Tree incomplete");
+      return cachedStone;
+    }
 
-    }
-      if (cachedStone.Next.HasValue)
-        return cachedStone.Next.Value.Count;
-      else
-      {
-        
-      }
-    }
-    else
-    {
-      
-    }
-    
+    var stone = new Stone(engraving);
+    treeCache[engraving] = stone;
+
+    if (blinks == Blinks) return stone;
+
+    SetNext(stone, blinks);
+
+    return stone;
   }
-  
+
+  void ExpandTree(Stone stone, int requiredDepth, int blinks)
+  {
+    if (stone.Depth >= requiredDepth)
+      return;
+
+    if (stone.Next == null)
+    {
+      SetNext(stone, blinks);
+      return;
+    }
+
+    var next = stone.Next ?? throw new InvalidOperationException("Tree incomplete");
+
+    ExpandTree(next.Item1, requiredDepth - 1, blinks + 1);
+
+    if (next.Item2 != null)
+      ExpandTree(next.Item2, requiredDepth - 1, blinks + 1);
+
+    stone.Depth = int.Min(next.Item1.Depth, next.Item2?.Depth ?? int.MaxValue) + 1;
+    if (stone.Depth < Blinks - blinks) throw new InvalidOperationException("Tree incomplete");
+  }
+
   int Count(Stone stone, int blinks)
   {
-    var current = stone;
-    for(var b = 0; b < blinks; b++)
+    if (blinks == Blinks)
     {
-      var next = stone.Next.Value;
-      if (stone.Next == null)
-        stone.Next = new[] { new Stone(Blink(stone.Engraving).Item1) };
-      else
-        stone.Next = stone.Next.Select(x => new Stone(Blink(x.Engraving).Item1)).ToArray();
-    }
-    if (stone.Next == null)
       return 1;
-    return stone.Next.Sum(Count);
+    }
+
+    blinks++;
+
+    var next = stone.Next ?? throw new InvalidOperationException("Tree incomplete");
+
+    return Count(next.Item1, blinks) + (next.Item2 == null ? 0 : Count(next.Item2, blinks));
   }
-  
+
+  void SetNext(Stone stone, int blinks)
+  {
+    var (engraving1, engraving2) = Blink(stone.Engraving);
+    var next = (BuildTree(engraving1, blinks + 1),
+      engraving2.HasValue ? BuildTree(engraving2.Value, blinks + 1) : null);
+    stone.Next = next;
+    stone.Depth = int.Min(next.Item1.Depth, next.Item2?.Depth ?? int.MaxValue) + 1;
+  }
+
   static (long, long?) Blink(long stone)
   {
     if (stone == 0)
@@ -158,4 +173,6 @@ public class SolverWithTree : ISolver<int[], int>
 record Stone(long Engraving)
 {
   public (Stone, Stone?)? Next { get; set; }
+
+  public int Depth { get; set; }
 }
