@@ -9,7 +9,7 @@ var example= "125 17";
 var total = Stopwatch.StartNew();
 var input = File.ReadAllLines("input.txt");
 var data = new Parser().Parse(input);
-var answer = new SolverWithTree().Solve(data);
+var answer = new SolverWithTree(50).Solve(data);
 Console.WriteLine($"# Answer Part 2: {answer}");
 Console.WriteLine($"# In: {total.Elapsed}");
 public class Parser : IParser<int[]>
@@ -64,12 +64,10 @@ public class Solver2 : Solver
   protected override int Blinks => 40;
 }
 
-public class SolverWithTree : ISolver<int[], int>
+public class SolverWithTree(int Blinks = 75) : ISolver<int[], int>
 {
   readonly Dictionary<long, Stone> treeCache = new();
   readonly Dictionary<long, List<int>> countCache = new();
-
-  protected virtual int Blinks => 75;
 
   public int Solve(int[] values)
   {
@@ -79,7 +77,7 @@ public class SolverWithTree : ISolver<int[], int>
       var sw = Stopwatch.StartNew();
       var tree = BuildTree(stone, 0);
       Console.WriteLine($"{stone}: Tree build in {sw.Elapsed}");
-      var subCount = Count(tree, 0);
+      var subCount = Count2(tree);
       Console.WriteLine($"{stone}: Count: {subCount} in {sw.Elapsed}");
       count += subCount;
     }
@@ -132,6 +130,7 @@ public class SolverWithTree : ISolver<int[], int>
   {
     if (blinks == Blinks)
     {
+      // Console.Write($"{stone.Engraving} ");
       return 1;
     }
 
@@ -140,6 +139,29 @@ public class SolverWithTree : ISolver<int[], int>
     var next = stone.Next ?? throw new InvalidOperationException("Tree incomplete");
 
     return Count(next.Item1, blinks) + (next.Item2 == null ? 0 : Count(next.Item2, blinks));
+  }
+
+  int Count2(Stone stone)
+  {
+    var count = 0;
+    var stack = new Stack<(Stone Stone, int Blinks)>();
+    stack.Push((stone, Blinks));
+    while(stack.Count > 0)
+    {
+      var (current, blinks) = stack.Pop();
+      for(var i = 0; i < blinks; i++)
+      {
+        var next = current.Next ?? throw new InvalidOperationException("Tree incomplete");
+        if (next.Item2 != null)
+          stack.Push((next.Item2, blinks - 1-i));
+
+        current = next.Item1;
+      }
+
+      count++;
+    }
+
+    return count;
   }
 
   void SetNext(Stone stone, int blinks)
