@@ -137,31 +137,6 @@ class Solver2 : Solver
     var goStraight = NextStep(point, direction);
     var goRight = NextStep(point, TurnDirection(direction, Turn.Right));
 
-    if (goLeft.CanGo)
-    {
-      Edge newEdge = default;
-      if (edge.HasFlag(Edge.LeftHandSide))
-      {
-        sides++;
-        newEdge = Edge.LeftHandSide;
-        Console.WriteLine($"At: {point} - {direction} - new side because turning left to {goLeft.Point}");
-      }
-
-      if (!used[goLeft.Point.X, goLeft.Point.Y])
-      {
-        if (!goStraight.CanGo)
-          newEdge |= Edge.RightHandSide;
-        var subResults = GetSidesAndArea(map, goLeft.Point, plant, used, newEdge, goLeft.Direction);
-        sides += subResults.Sides;
-        area += subResults.Area;
-      }
-    }
-    else if (!edge.HasFlag(Edge.LeftHandSide))
-    {
-      sides++;
-      Console.WriteLine($"At: {point} - {direction} - new side to the left ({goLeft.Point})");
-    }
-
     if (goStraight.CanGo)
     {
       if (!used[goStraight.Point.X, goStraight.Point.Y])
@@ -175,24 +150,36 @@ class Solver2 : Solver
     else
     {
       sides++;
-      Console.WriteLine($"At: {point} - {direction} - new side straight ({goStraight.Point})");
+      // Console.WriteLine($"At: {point} - {direction} - new side straight ({goStraight.Point})");
     }
+
+    if (goLeft.CanGo)
+    {
+      if (!used[goLeft.Point.X, goLeft.Point.Y])
+      {
+        Edge newEdge = default;
+        if (!goStraight.CanGo)
+          newEdge = Edge.RightHandSide;
+        var subResults = GetSidesAndArea(map, goLeft.Point, plant, used, newEdge, goLeft.Direction);
+        sides += subResults.Sides;
+        area += subResults.Area;
+      }
+    }
+    else if (!edge.HasFlag(Edge.LeftHandSide))
+    {
+      sides++;
+      // Console.WriteLine($"At: {point} - {direction} - new side to the left ({goLeft.Point})");
+    }
+
+    
 
     if (goRight.CanGo)
     {
-      Edge newEdge = default;
-      if (edge.HasFlag(Edge.RightHandSide))
-      {
-        sides++;
-        newEdge = Edge.RightHandSide;
-        Console.WriteLine($"At: {point} - {direction} - new side because turning right to {goRight.Point}");
-      }
-
       if (!used[goRight.Point.X, goRight.Point.Y])
       {
+        Edge newEdge = default;
         if (!goStraight.CanGo)
-          newEdge |= Edge.LeftHandSide;
-
+          newEdge = Edge.LeftHandSide;
         var subResults = GetSidesAndArea(map, goRight.Point, plant, used, newEdge, goRight.Direction);
         sides += subResults.Sides;
         area += subResults.Area;
@@ -201,7 +188,7 @@ class Solver2 : Solver
     else if (!edge.HasFlag(Edge.RightHandSide))
     {
       sides++;
-      Console.WriteLine($"At: {point} - {direction} - new side to the right ({goRight.Point})");
+      // Console.WriteLine($"At: {point} - {direction} - new side to the right ({goRight.Point})");
     }
 
     return (Area: area, Sides: sides);
