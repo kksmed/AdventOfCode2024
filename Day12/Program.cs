@@ -119,7 +119,7 @@ class Solver2 : Solver
       var results = GetSidesAndArea(data, startPoint, plant, used, Edge.LeftHandSide, Direction.Right);
       var down = Go(startPoint, Direction.Down);
       var right = Go(startPoint, Direction.Right);
-      var extraSides = data.InBounds(down) && data[down.X, down.Y] != plant && data.InBounds(right) && data[right.X, right.Y] != plant ? 2 : 1;
+      var extraSides = (!data.InBounds(down) || data[down.X, down.Y] != plant) && (!data.InBounds(right) || data[right.X, right.Y] != plant) ? 2 : 1;
 
       costs += (extraSides + results.Sides) * results.Area;
       Console.WriteLine($"{plant}: {results.Area} x {extraSides + results.Sides}");
