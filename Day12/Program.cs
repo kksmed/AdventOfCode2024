@@ -1,8 +1,52 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using System.Drawing;
 
 using Common;
 
+var parser = new CharMapParser();
+var s2 = new Solver2();
+
 var example =
+  """
+  AAAA
+  BBCD
+  BBCC
+  EEEC
+  """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 80);
+
+example =
+  """
+  OOOOO
+  OXOXO
+  OOOOO
+  OXOXO
+  OOOOO
+  """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 436);
+
+example =
+  """
+  EEEEE
+  EXXXX
+  EEEEE
+  EXXXX
+  EEEEE
+  """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 236);
+
+example =
+  """
+  AAAAAA
+  AAABBA
+  AAABBA
+  ABBAAA
+  ABBAAA
+  AAAAAA
+  """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 368);
+
+example =
   """
   RRRRIICCFF
   RRRRIICCCF
@@ -15,8 +59,11 @@ var example =
   MIIISIJEEE
   MMMISSJEEE
   """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 1206);
 
-Solving.Go(example, new CharMapParser(), new Solver(), new Solver2());
+Console.WriteLine("All tests passed");
+
+//Solving.Go(example, parser, new Solver(), new Solver2());
 
 class Solver : ISolver<char[,], int>
 {
@@ -118,7 +165,7 @@ class Solver2 : Solver
       var plant = data[startPoint.X, startPoint.Y];
       var results = GetSidesAndArea(data, startPoint, plant, used, default, Direction.Right);
       var down = Go(startPoint, Direction.Down);
-      var extraSides = !data.InBounds(down) || data[down.X, down.Y] != plant? 1 : 0;
+      var extraSides = !data.InBounds(down) || data[down.X, down.Y] != plant ? 1 : 0;
 
       costs += results.Area * (extraSides + results.Sides);
       Console.WriteLine($"{plant}: {results.Area} x {extraSides + results.Sides}");
@@ -171,8 +218,6 @@ class Solver2 : Solver
       // Console.WriteLine($"At: {point} - {direction} - new side to the left ({goLeft.Point})");
     }
 
-    
-
     if (goRight.CanGo)
     {
       if (!used[goRight.Point.X, goRight.Point.Y])
@@ -219,8 +264,5 @@ class Solver2 : Solver
   [Flags]
   enum Edge { RightHandSide = 1, LeftHandSide = 2 }
 
-  enum Turn
-  {
-    Left, Right
-  }
+  enum Turn { Left, Right }
 }
