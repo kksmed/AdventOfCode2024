@@ -16,19 +16,18 @@ var example =
   MMMISSJEEE
   """;
 
-Solving.Go(example, new CharMapParser(), new Solver());
+Solving.Go(example, new CharMapParser(), new Solver(), new Solver2());
 
 class Solver : ISolver<char[,], int>
 {
-
-  public int Solve(char[,] data)
+  public virtual int Solve(char[,] data)
   {
     var costs = 0;
     var used = new bool[data.GetLength(0), data.GetLength(1)];
     foreach (var startPoint in GetUnused(used))
     {
       var plant = data[startPoint.X, startPoint.Y];
-      var results = Search(data, startPoint, plant, used, Direction.Right);
+      var results = GetPerimeterAndArea(data, startPoint, plant, used, Direction.Right);
 
       costs += (1 + results.Perimeter) * results.Area;
     }
@@ -36,7 +35,7 @@ class Solver : ISolver<char[,], int>
     return costs;
   }
 
-  static IEnumerable<Point> GetUnused(bool[,] data)
+  protected static IEnumerable<Point> GetUnused(bool[,] data)
   {
     for (var x = 0; x < data.GetLength(0); x++)
     for (var y = 0; y < data.GetLength(1); y++)
@@ -46,23 +45,23 @@ class Solver : ISolver<char[,], int>
     }
   }
 
-  static (int Perimeter, int Area) Search(char[,] map, Point p, char plant, bool[,] used, Direction direction)
+  static (int Perimeter, int Area) GetPerimeterAndArea(char[,] map, Point point, char plant, bool[,] used, Direction direction)
   {
-    used[p.X, p.Y] = true;
+    used[point.X, point.Y] = true;
     var perimeter = 0;
     var area = 1;
 
     foreach (var directionToGo in new[]
     {
       Direction.Left, Direction.Up, Direction.Right, Direction.Down
-    }.Where(d => d != Oppersite(direction)))
+    }.Where(d => d != Opposite(direction)))
     {
-      var next = Go(p, directionToGo);
+      var next = Go(point, directionToGo);
       if (map.InBounds(next) && map[next.X, next.Y] == plant)
       {
         if (used[next.X, next.Y])
           continue;
-        var subResults = Search(map, next, plant, used, directionToGo);
+        var subResults = GetPerimeterAndArea(map, next, plant, used, directionToGo);
         perimeter += subResults.Perimeter;
         area += subResults.Area;
       }
@@ -75,7 +74,7 @@ class Solver : ISolver<char[,], int>
     return (perimeter, area);
   }
 
-  static Point Go(Point p, Direction direction) => direction switch
+  protected static Point Go(Point p, Direction direction) => direction switch
   {
     Direction.Up => p with
     {
@@ -96,7 +95,7 @@ class Solver : ISolver<char[,], int>
     _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
   };
 
-  static Direction Oppersite(Direction direction) => direction switch
+  protected static Direction Opposite(Direction direction) => direction switch
   {
     Direction.Up => Direction.Down,
     Direction.Down => Direction.Up,
@@ -105,5 +104,132 @@ class Solver : ISolver<char[,], int>
     _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
   };
 
-  enum Direction { Up, Down, Left, Right }
+  protected enum Direction { Up, Down, Left, Right }
+}
+
+class Solver2 : Solver
+{
+  public override int Solve(char[,] data)
+  {
+    var costs = 0;
+    var used = new bool[data.GetLength(0), data.GetLength(1)];
+    foreach (var startPoint in GetUnused(used))
+    {
+      var plant = data[startPoint.X, startPoint.Y];
+      var results = GetSidesAndArea(data, startPoint, plant, used, Edge.LeftHandSide, Direction.Right);
+      var down = Go(startPoint, Direction.Down);
+      var right = Go(startPoint, Direction.Right);
+      var extraSides = data.InBounds(down) && data[down.X, down.Y] != plant && data.InBounds(right) && data[right.X, right.Y] != plant ? 2 : 1;
+
+      costs += (extraSides + results.Sides) * results.Area;
+      Console.WriteLine($"{plant}: {results.Area} x {extraSides + results.Sides}");
+    }
+
+    return costs;
+  }
+
+  (int Sides, int Area) GetSidesAndArea(char[,] map, Point point, char plant, bool[,] used, Edge edge, Direction direction)
+  {
+    used[point.X, point.Y] = true;
+    var area = 1;
+    var sides = 0;
+
+    var goLeft = NextStep(point, TurnDirection(direction, Turn.Left));
+    var goStraight = NextStep(point, direction);
+    var goRight = NextStep(point, TurnDirection(direction, Turn.Right));
+
+    if (goLeft.CanGo)
+    {
+      Edge newEdge = default;
+      if (edge.HasFlag(Edge.LeftHandSide))
+      {
+        sides++;
+        newEdge = Edge.LeftHandSide;
+      }
+
+      if (!used[goLeft.Point.X, goLeft.Point.Y])
+      {
+        if (!goStraight.CanGo)
+          newEdge |= Edge.RightHandSide;
+        var subResults = GetSidesAndArea(map, goLeft.Point, plant, used, newEdge, goLeft.Direction);
+        sides += subResults.Sides;
+        area += subResults.Area;
+      }
+    }
+    else if (!edge.HasFlag(Edge.LeftHandSide))
+    {
+      sides++;
+    }
+
+    if (goStraight.CanGo)
+    {
+      if (!used[goStraight.Point.X, goStraight.Point.Y])
+      {
+        var newEdge = (!goLeft.CanGo ? Edge.LeftHandSide : 0) | (!goRight.CanGo ? Edge.RightHandSide : default);
+        var subResults = GetSidesAndArea(map, goStraight.Point, plant, used, newEdge, goStraight.Direction);
+        sides += subResults.Sides;
+        area += subResults.Area;
+      }
+    }
+    else
+    {
+      sides++;
+    }
+
+    if (goRight.CanGo)
+    {
+      Edge newEdge = default;
+      if (edge.HasFlag(Edge.RightHandSide))
+      {
+        sides++;
+        newEdge = Edge.RightHandSide;
+      }
+
+      if (!used[goRight.Point.X, goRight.Point.Y])
+      {
+        if (!goStraight.CanGo)
+          newEdge |= Edge.LeftHandSide;
+
+        var subResults = GetSidesAndArea(map, goRight.Point, plant, used, newEdge, goRight.Direction);
+        sides += subResults.Sides;
+        area += subResults.Area;
+      }
+    }
+    else if (!edge.HasFlag(Edge.RightHandSide))
+    {
+      sides++;
+    }
+
+    return (sides, area);
+
+    (Point Point, Direction Direction, bool CanGo) NextStep(Point p, Direction d)
+    {
+      var nextPoint = Go(p, d);
+      return (Point: nextPoint, Direction: d, CanGo: map.InBounds(nextPoint) && map[nextPoint.X, nextPoint.Y] == plant);
+    }
+  }
+
+  static Direction TurnDirection(Direction direction, Turn turn)
+  {
+    return (turn, direction) switch
+    {
+      (Turn.Left, Direction.Up) => Direction.Left,
+      (Turn.Left, Direction.Down) => Direction.Right,
+      (Turn.Left, Direction.Right) => Direction.Up,
+      (Turn.Left, Direction.Left) => Direction.Down,
+      (Turn.Right, Direction.Up) => Direction.Right,
+      (Turn.Right, Direction.Down) => Direction.Left,
+      (Turn.Right, Direction.Right) => Direction.Down,
+      (Turn.Right, Direction.Left) => Direction.Up,
+      _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+    };
+  }
+
+  [Flags]
+  enum Edge { RightHandSide = 1, LeftHandSide = 2 }
+
+  enum Turn
+  {
+    Left, Right
+  }
 }
