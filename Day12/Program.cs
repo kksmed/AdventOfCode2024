@@ -116,19 +116,18 @@ class Solver2 : Solver
     foreach (var startPoint in GetUnused(used))
     {
       var plant = data[startPoint.X, startPoint.Y];
-      var results = GetSidesAndArea(data, startPoint, plant, used, Edge.LeftHandSide, Direction.Right);
+      var results = GetSidesAndArea(data, startPoint, plant, used, default, Direction.Right);
       var down = Go(startPoint, Direction.Down);
-      var right = Go(startPoint, Direction.Right);
-      var extraSides = (!data.InBounds(down) || data[down.X, down.Y] != plant) && (!data.InBounds(right) || data[right.X, right.Y] != plant) ? 2 : 1;
+      var extraSides = !data.InBounds(down) || data[down.X, down.Y] != plant? 1 : 0;
 
-      costs += (extraSides + results.Sides) * results.Area;
+      costs += results.Area * (extraSides + results.Sides);
       Console.WriteLine($"{plant}: {results.Area} x {extraSides + results.Sides}");
     }
 
     return costs;
   }
 
-  (int Sides, int Area) GetSidesAndArea(char[,] map, Point point, char plant, bool[,] used, Edge edge, Direction direction)
+  static (int Area, int Sides) GetSidesAndArea(char[,] map, Point point, char plant, bool[,] used, Edge edge, Direction direction)
   {
     used[point.X, point.Y] = true;
     var area = 1;
@@ -145,6 +144,7 @@ class Solver2 : Solver
       {
         sides++;
         newEdge = Edge.LeftHandSide;
+        Console.WriteLine($"At: {point} - {direction} - new side because turning left to {goLeft.Point}");
       }
 
       if (!used[goLeft.Point.X, goLeft.Point.Y])
@@ -159,6 +159,7 @@ class Solver2 : Solver
     else if (!edge.HasFlag(Edge.LeftHandSide))
     {
       sides++;
+      Console.WriteLine($"At: {point} - {direction} - new side to the left ({goLeft.Point})");
     }
 
     if (goStraight.CanGo)
@@ -174,6 +175,7 @@ class Solver2 : Solver
     else
     {
       sides++;
+      Console.WriteLine($"At: {point} - {direction} - new side straight ({goStraight.Point})");
     }
 
     if (goRight.CanGo)
@@ -183,6 +185,7 @@ class Solver2 : Solver
       {
         sides++;
         newEdge = Edge.RightHandSide;
+        Console.WriteLine($"At: {point} - {direction} - new side because turning right to {goRight.Point}");
       }
 
       if (!used[goRight.Point.X, goRight.Point.Y])
@@ -198,9 +201,10 @@ class Solver2 : Solver
     else if (!edge.HasFlag(Edge.RightHandSide))
     {
       sides++;
+      Console.WriteLine($"At: {point} - {direction} - new side to the right ({goRight.Point})");
     }
 
-    return (sides, area);
+    return (Area: area, Sides: sides);
 
     (Point Point, Direction Direction, bool CanGo) NextStep(Point p, Direction d)
     {
