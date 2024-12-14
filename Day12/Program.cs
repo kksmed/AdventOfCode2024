@@ -61,9 +61,29 @@ example =
   """;
 Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 1206);
 
+example =
+  """
+  EEXXX
+  XEEXX
+  EEXXX
+  XEXXX
+  EEXXX
+  """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 264);
+
+example =
+  """
+  XXXXX
+  XXEEX
+  XXXEX
+  XEEEX
+  XXXXX
+  """;
+Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 276);
+
 Console.WriteLine("All tests passed");
 
-//Solving.Go(example, parser, new Solver(), new Solver2());
+Solving.Go(example, parser, new Solver(), new Solver2());
 
 class Solver : ISolver<char[,], int>
 {
