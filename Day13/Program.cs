@@ -91,8 +91,11 @@ class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
       {
         var rest = (X: cm.Prize.X - a * cm.ButtonA.X, Y: cm.Prize.Y - a * cm.ButtonA.Y);
         var b = rest.X / cm.ButtonB.X;
-        if (rest.X % cm.ButtonB.X == 0 && b * cm.ButtonB.Y == rest.Y )
+        if (rest.X % cm.ButtonB.X == 0 && b * cm.ButtonB.Y == rest.Y)
+        {
+          Console.WriteLine($"{claw} A: {a} B: {b}");
           return a * costOfA + b * costOfB;
+        }
       }
     }
     else
@@ -103,7 +106,10 @@ class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
         var rest = (X: cm.Prize.X - b * cm.ButtonB.X, Y: cm.Prize.Y - b * cm.ButtonB.Y);
         var a = rest.X / cm.ButtonA.X;
         if (rest.X % cm.ButtonA.X == 0 && a * cm.ButtonA.Y == rest.Y)
+        {
+          Console.WriteLine($"{claw} A: {a} B: {b}");
           return a * costOfA + b * costOfB;
+        }
       }
     }
 
