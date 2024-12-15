@@ -4,7 +4,7 @@ using Common;
 
 public class SolverWithTree(int Blinks = 75) : ISolver<int[], long>
 {
-  readonly Dictionary<long, List<long>> countCache = new();
+  readonly Dictionary<LazyStone, List<long>> countCache = new();
 
   public long Solve(int[] values)
   {
@@ -22,39 +22,94 @@ public class SolverWithTree(int Blinks = 75) : ISolver<int[], long>
     return count;
   }
 
-  static int Count(LazyStone stone, int blinks)
+  long Count(LazyStone stone, int blinks)
   {
+    while(stone.Next.Item2 == null && blinks > 1)
+    {
+      stone = stone.Next.Item1;
+      blinks--;
+    }
+
     if (blinks == 0)
     {
-      // Console.Write($"{stone.Engraving} ");
       return 1;
     }
 
-    blinks--;
+    // Do not lookup when blinks is 1 (maybe a bit higher should also avoid cache-lookup)
+    if (blinks == 1)
+    {
+      return stone.Next.Item2 == null ? 1 : 2;
+    }
+
+    if (countCache.TryGetValue(stone, out var counts) && counts.Count > blinks)
+    {
+      return counts[blinks];
+    }
 
     var next = stone.Next;
 
     return Count(next.Item1, blinks) + (next.Item2 == null ? 0 : Count(next.Item2, blinks));
   }
 
-  int Count2(Stone stone)
+  int Count2(LazyStone stone, int blinks)
   {
     var count = 0;
-    var stack = new Stack<(Stone Stone, int Blinks)>();
-    stack.Push((stone, Blinks));
+    var stack = new Stack<(LazyStone Stone, int Blinks)>();
+    stack.Push((stone, blinks));
     while(stack.Count > 0)
     {
-      var (current, blinks) = stack.Pop();
-      for(var b = 1; b <= blinks; b++)
+      var (current, blinksToGo) = stack.Pop();
+      for(var b = 1; b <= blinksToGo; b++)
       {
-        var next = current.Next ?? throw new InvalidOperationException("Tree incomplete");
+        var next = current.Next;
         if (next.Item2 != null)
-          stack.Push((next.Item2, blinks - b));
+          stack.Push((next.Item2, blinksToGo - b));
 
         current = next.Item1;
       }
 
       count++;
+    }
+
+    return count;
+  }
+
+  public void BuildCache() => CountBuildCache(new (0), Blinks);
+
+  long CountBuildCache(LazyStone start, int blinks)
+  {
+    if (blinks == 1)
+      return start.Next.Item2 == null ? 1 : 2;
+
+    if (!countCache.TryGetValue(start, out var counts))
+    {
+      counts = [1];
+      countCache[start] = counts;
+    }
+    else if (counts.Count > blinks)
+      return counts[blinks];
+
+    var startBlinks = 1;
+    while (start.Next.Item2 == null && startBlinks < blinks)
+    {
+      startBlinks++;
+      counts.Add(1);
+      start = start.Next.Item1;
+    }
+
+    if (start.Next.Item2 == null)
+      return 1;
+
+    var first = start.Next.Item1;
+    var second = start.Next.Item2;
+
+    var count = 1L;
+    for (var b = startBlinks; b < blinks; b++)
+    {
+      var count1 = CountBuildCache(first, b);
+      var count2 = CountBuildCache(second, b);
+      count = count1 + count2;
+      counts.Add(count1 + count2);
     }
 
     return count;

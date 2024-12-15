@@ -9,10 +9,12 @@ var example= "125 17";
 //Solving.Go("0", new Parser(), new SolverAlternativeCache(75));
 //Solving.Go(example, new Parser(), new SolverWithTree(25));
 //
+var solver = new SolverWithTree(25);
+solver.BuildCache();
 var total = Stopwatch.StartNew();
 var input = File.ReadAllLines("input.txt");
 var data = new Parser().Parse(input);
-var answer = new SolverWithTree(50).Solve(data);
+var answer = solver.Solve(data);
 Console.WriteLine($"# Answer Part 2: {answer}");
 Console.WriteLine($"# In: {total.Elapsed}");
 
