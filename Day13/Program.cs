@@ -22,7 +22,7 @@ var example =
   Prize: X=18641, Y=10279
   """;
 
-Solving.Go(example, new Parser(), new Solver());
+Solving.Go(example, new Parser(), new Solver(), solverPart2: new Solver2());
 
 class Parser : IParser<IEnumerable<ClawMachine>>
 {
@@ -71,4 +71,34 @@ class Solver : ISolver<IEnumerable<ClawMachine>, int>
         yield return a * costOfA + b * costOfB;
   }
 }
+
+class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
+{
+  readonly long costOfA = 3;
+  readonly long costOfB = 1;
+  const long offSet = 10000000000000;
+
+  public long Solve(IEnumerable<ClawMachine> data) => data.Select(GetMinimumTokens).Sum();
+
+  long GetMinimumTokens(ClawMachine arg)
+  {
+    var solutions = FindAllSolutions(arg);
+    return solutions.Any() ? FindAllSolutions(arg).Min() : 0;
+  }
+
+  IEnumerable<long> FindAllSolutions(ClawMachine claw)
+  {
+    var cm = new CorrectedClawMachine(claw);
+    for (long a = 0; a * cm.ButtonA.X <= cm.Prize.X && a * cm.ButtonA.Y <= cm.Prize.Y; a++)
+    for (long b = 0; a * cm.ButtonA.X + b * cm.ButtonB.X <= cm.Prize.X && a * cm.ButtonA.Y + b * cm.ButtonB.Y <= cm.Prize.Y; b++)
+      if (a * cm.ButtonA.X + b * cm.ButtonB.X == cm.Prize.X && a * cm.ButtonA.Y + b * cm.ButtonB.Y == cm.Prize.Y)
+        yield return a * costOfA + b * costOfB;
+  }
+
+  record CorrectedClawMachine(Point ButtonA, Point ButtonB, (long X, long Y) Prize)
+  {
+    public CorrectedClawMachine(ClawMachine claw) : this(claw.ButtonA, claw.ButtonB, (claw.Prize.X + offSet, claw.Prize.Y + offSet)) { }
+  }
+}
+
 record ClawMachine(Point ButtonA, Point ButtonB, Point Prize);

@@ -15,7 +15,7 @@ public static class Solving
     string example,
     IParser<T1Data> parserPart1,
     ISolver<T1Data, T1Result> solverPart1,
-    IParser<T2Data> parserPart2,
+    IParser<T2Data>? parserPart2 = null,
     ISolver<T2Data, T2Result>? solverPart2 = null) where T2Data : class =>
     DoAll(example, parserPart1, solverPart1, parserPart2, solverPart2);
 
