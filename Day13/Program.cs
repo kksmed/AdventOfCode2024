@@ -22,7 +22,8 @@ var example =
   Prize: X=18641, Y=10279
   """;
 
-Solving.Go(example, new Parser(), new Solver(), solverPart2: new Solver2());
+//Solving.Go(example, new Parser(), new Solver(), solverPart2: new Solver2());
+Solving.Go(example, new Parser(), new Solver2());
 
 class Parser : IParser<IEnumerable<ClawMachine>>
 {
@@ -84,9 +85,26 @@ class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
   {
     var cm = new CorrectedClawMachine(claw);
 
+    // Test
+    var maxAPushes = Math.Min(cm.Prize.X / cm.ButtonA.X, cm.Prize.Y / cm.ButtonA.Y);
+    var maxBPushes = Math.Min(cm.Prize.X / cm.ButtonB.X, cm.Prize.Y / cm.ButtonB.Y);
+    if (maxAPushes * cm.ButtonA.X + maxBPushes * cm.ButtonB.X < cm.Prize.X || maxAPushes * cm.ButtonA.Y + maxBPushes * cm.ButtonB.Y < cm.Prize.Y)
+    {
+      Console.WriteLine($"{claw} A: {maxAPushes} B: {maxBPushes} - quick fail 1");
+      return 0;
+    }
+
+    var gradeA = (double)cm.ButtonA.X / cm.ButtonA.Y;
+    var gradeB = (double)cm.ButtonB.X / cm.ButtonB.Y;
+    var prizeGrade = (double)cm.Prize.X / cm.Prize.Y;
+    if (gradeA < prizeGrade && gradeB < prizeGrade || gradeA > prizeGrade && gradeB > prizeGrade)
+    {
+      Console.WriteLine($"{claw} A: {maxAPushes} B: {maxBPushes} - quick fail 2");
+      return 0;
+    }
+
     if ((cm.ButtonA.X + cm.ButtonA.Y) / (double)costOfA > (cm.ButtonB.X + cm.ButtonB.Y) / (double)costOfB)
     {
-      var maxAPushes = Math.Min(cm.Prize.X / cm.ButtonA.X, cm.Prize.Y / cm.ButtonA.Y);
       for (var a = maxAPushes; a >= 0; a--)
       {
         var rest = (X: cm.Prize.X - a * cm.ButtonA.X, Y: cm.Prize.Y - a * cm.ButtonA.Y);
@@ -100,7 +118,6 @@ class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
     }
     else
     {
-      var maxBPushes = Math.Min(cm.Prize.X / cm.ButtonB.X, cm.Prize.Y / cm.ButtonB.Y);
       for (var b = maxBPushes; b >= 0; b--)
       {
         var rest = (X: cm.Prize.X - b * cm.ButtonB.X, Y: cm.Prize.Y - b * cm.ButtonB.Y);
