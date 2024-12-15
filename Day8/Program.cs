@@ -36,7 +36,7 @@ var example2 =
   ..........
   """;
 
-Solving.Go(example2, new CharMapParser(), new Part2());
+Solving.Go1(example2, new CharMapParser(), new Part2());
 
 class Part1 : ISolver<char[,], int>
 {

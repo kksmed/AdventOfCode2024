@@ -4,6 +4,10 @@ namespace Common;
 
 public static class Solving
 {
+  public static void GoParse<TData>(string? example, IParser<TData> parser) => Go<TData, int, int>(example, parser);
+
+  public static void Go1<TData, T1Result>(string? example, IParser<TData> parser, ISolver<TData, T1Result>? solverPart1 = null) => Go<TData, T1Result, T1Result>(example, parser, solverPart1);
+
   public static void Go<TData, T1Result, T2Result>(
     string? example,
     IParser<TData> parser,
