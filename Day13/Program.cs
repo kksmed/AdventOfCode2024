@@ -78,21 +78,36 @@ class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
   readonly long costOfB = 1;
   const long offSet = 10000000000000;
 
-  public long Solve(IEnumerable<ClawMachine> data) => data.Select(GetMinimumTokens).Sum();
+  public long Solve(IEnumerable<ClawMachine> data) => data.Select(FindMinimum).Sum();
 
-  long GetMinimumTokens(ClawMachine arg)
-  {
-    var solutions = FindAllSolutions(arg);
-    return solutions.Any() ? FindAllSolutions(arg).Min() : 0;
-  }
-
-  IEnumerable<long> FindAllSolutions(ClawMachine claw)
+  long FindMinimum(ClawMachine claw)
   {
     var cm = new CorrectedClawMachine(claw);
-    for (long a = 0; a * cm.ButtonA.X <= cm.Prize.X && a * cm.ButtonA.Y <= cm.Prize.Y; a++)
-    for (long b = 0; a * cm.ButtonA.X + b * cm.ButtonB.X <= cm.Prize.X && a * cm.ButtonA.Y + b * cm.ButtonB.Y <= cm.Prize.Y; b++)
-      if (a * cm.ButtonA.X + b * cm.ButtonB.X == cm.Prize.X && a * cm.ButtonA.Y + b * cm.ButtonB.Y == cm.Prize.Y)
-        yield return a * costOfA + b * costOfB;
+
+    if ((cm.ButtonA.X + cm.ButtonA.Y) / (double)costOfA > (cm.ButtonB.X + cm.ButtonB.Y) / (double)costOfB)
+    {
+      var maxAPushes = Math.Min(cm.Prize.X / cm.ButtonA.X, cm.Prize.Y / cm.ButtonA.Y);
+      for (var a = maxAPushes; a >= 0; a--)
+      {
+        var rest = (X: cm.Prize.X - a * cm.ButtonA.X, Y: cm.Prize.Y - a * cm.ButtonA.Y);
+        var b = rest.X / cm.ButtonB.X;
+        if (rest.X % cm.ButtonB.X == 0 && b * cm.ButtonB.Y == rest.Y )
+          return a * costOfA + b * costOfB;
+      }
+    }
+    else
+    {
+      var maxBPushes = Math.Min(cm.Prize.X / cm.ButtonB.X, cm.Prize.Y / cm.ButtonB.Y);
+      for (var b = maxBPushes; b >= 0; b--)
+      {
+        var rest = (X: cm.Prize.X - b * cm.ButtonB.X, Y: cm.Prize.Y - b * cm.ButtonB.Y);
+        var a = rest.X / cm.ButtonA.X;
+        if (rest.X % cm.ButtonA.X == 0 && a * cm.ButtonA.Y == rest.Y)
+          return a * costOfA + b * costOfB;
+      }
+    }
+
+    return 0;
   }
 
   record CorrectedClawMachine(Point ButtonA, Point ButtonB, (long X, long Y) Prize)
