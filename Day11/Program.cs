@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 
 using Common;
 
@@ -6,37 +7,30 @@ using Day11;
 
 var example= "125 17";
 
-//Solving.Go("0", new Parser(), new SolverAlternativeCache(75));
-//Solving.Go(example, new Parser(), new SolverWithTree(25));
-//
-var solver = new SolverWithTree(25);
-solver.BuildCache();
-var total = Stopwatch.StartNew();
-var input = File.ReadAllLines("input.txt");
-var data = new Parser().Parse(input);
-var answer = solver.Solve(data);
-Console.WriteLine($"# Answer Part 2: {answer}");
-Console.WriteLine($"# In: {total.Elapsed}");
+Solving.Go(example, new Parser(), new Solver(25), new Solver2(75));
+
+// var total = Stopwatch.StartNew();
+// var input = File.ReadAllLines("input.txt");
+// var data = new Parser().Parse(input);
+// var answer = new SolverWithTree().Solve(data);
+// Console.WriteLine($"# Answer Part 2: {answer}");
+// Console.WriteLine($"# In: {total.Elapsed}");
 
 public class Parser : IParser<int[]>
 {
   public int[] Parse(string[] values) => values.SelectMany(x => x.Split(' ')).Select(int.Parse).ToArray();
 }
 
-public class Solver : ISolver<int[], int>
+public class Solver(int Blinks) : ISolver<int[], int>
 {
-  protected virtual int Blinks => 6;
   public int Solve(int[] values)
   {
     var stones = values.Select(x => (long)x).ToList();
     for (var i = 0; i < Blinks; i++)
     {
-      var sw = Stopwatch.StartNew();
       stones = Blink(stones).ToList();
-      // Console.WriteLine($"Blink {i} {stones.Count()} in {sw.ElapsedMilliseconds}ms");
     }
 
-    Console.WriteLine($"Stones: {string.Join(", ",stones)}");
     return stones.Count;
   }
 
@@ -65,10 +59,44 @@ public class Solver : ISolver<int[], int>
   }
 }
 
-public class Solver2 : Solver
+public class Solver2(int Blinks) : ISolver<int[], BigInteger>
 {
-  protected override int Blinks => 40;
+  public BigInteger Solve(int[] values)
+  {
+    var stones = values.ToDictionary(x => new BigInteger(x), x => BigInteger.One);
+    for (var i = 0; i < Blinks; i++)
+    {
+      stones = Blink(stones).GroupBy(x => x.Key).ToDictionary(x => x.Key, x => x.Aggregate(BigInteger.Zero, (acc, y) => acc + y.Value));
+    }
+
+    return stones.Values.Aggregate(BigInteger.Add);
+  }
+
+  static IEnumerable<KeyValuePair<BigInteger, BigInteger>> Blink(IEnumerable<KeyValuePair<BigInteger, BigInteger>> stones)
+  {
+    foreach (var stone in stones)
+    {
+      if (stone.Key.IsZero)
+      {
+        yield return new(BigInteger.One, stone.Value);
+        continue;
+      }
+
+      var engraving = stone.Key.ToString();
+      var digits = engraving.Length;
+      if (digits % 2 == BigInteger.Zero)
+      {
+        var half = digits / 2;
+        yield return new(BigInteger.Parse(engraving[..half]), stone.Value);
+        yield return new(BigInteger.Parse(engraving[half..]), stone.Value);
+        continue;
+      }
+
+      yield return new(stone.Key * 2024, stone.Value);
+    }
+  }
 }
+
 
 // public class Solver4(int Blinks) : ISolver<int[], int>
 // {

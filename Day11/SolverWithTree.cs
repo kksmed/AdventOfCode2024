@@ -2,6 +2,8 @@ using System.Diagnostics;
 
 using Common;
 
+namespace Day11;
+
 public class SolverWithTree(int Blinks = 75) : ISolver<int[], long>
 {
   readonly Dictionary<LazyStone, List<long>> countCache = new();
@@ -13,7 +15,7 @@ public class SolverWithTree(int Blinks = 75) : ISolver<int[], long>
     {
       var sw = Stopwatch.StartNew();
       var stone = new LazyStone(value);
-      var subCount = Count(stone, Blinks);
+      var subCount = Count2(stone, Blinks);
       Console.WriteLine($"{value}: Count: {subCount} in {sw.Elapsed}");
 
       count += subCount;
@@ -51,7 +53,7 @@ public class SolverWithTree(int Blinks = 75) : ISolver<int[], long>
     return Count(next.Item1, blinks) + (next.Item2 == null ? 0 : Count(next.Item2, blinks));
   }
 
-  int Count2(LazyStone stone, int blinks)
+  long Count2(LazyStone stone, int blinks)
   {
     var count = 0;
     var stack = new Stack<(LazyStone Stone, int Blinks)>();
@@ -69,6 +71,8 @@ public class SolverWithTree(int Blinks = 75) : ISolver<int[], long>
       }
 
       count++;
+      if (count % 1_073_741_824 == 0)
+        Console.WriteLine($"Count: {count}");
     }
 
     return count;
