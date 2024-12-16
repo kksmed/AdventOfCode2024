@@ -66,7 +66,7 @@ public class Solver2(int Blinks) : ISolver<int[], BigInteger>
     var stones = values.ToDictionary(x => new BigInteger(x), x => BigInteger.One);
     for (var i = 0; i < Blinks; i++)
     {
-      stones = Blink(stones).GroupBy(x => x.Key).ToDictionary(x => x.Key, x => x.Aggregate(BigInteger.Zero, (acc, y) => acc + y.Value));
+      stones = Blink(stones).GroupBy(x => x.Key).ToDictionary(x => x.Key, x => x.Select(y => y.Value).Aggregate(BigInteger.Add));
     }
 
     return stones.Values.Aggregate(BigInteger.Add);
