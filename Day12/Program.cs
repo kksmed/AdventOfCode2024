@@ -73,6 +73,35 @@ Debug.Assert(s2.Solve(parser.Parse(example.Split(Environment.NewLine))) == 264);
 
 example =
   """
+  XXXXXXXXXXXXXXXXXXXXXXXXXXX
+  XXXXXXXXXXXXXGGXXXXXXXGGGXX
+  XXXXXXXXXXXXXXGXXXXXXXGGXXX
+  XXXXXXXXXXXXGGGXXXXGGGGGXXX
+  XXXXXXXXXXXGGGGGGXGGGGGGXXX
+  XXXXXXXXXXXGGGGGGXXGGGGGGXX
+  XXXXXXXXGGGGGGGGGGGGGGGGGGX
+  XXXXXXXXGGGGGGGGGGGGGGGGGGX
+  XXGGXXGGGGGGGGGGGGGGGGGGGXX
+  XXGGXXGGGGGGGGGGGGGGGGGGXXX
+  XXXGGGXGGGGGGGGGGGGGGXXGXXX
+  XXXGGGGGGGGGGGGGGGGGGGGGXXX
+  XXXGGGGGGGGGGGGGGGGGGGXGXXX
+  XGGGGGGGGGGGGGXGGGGGGXXXXXX
+  XXGGGGGGGGGGGGGGGGGGGXXXXXX
+  XGGGGGGGGGGGGGXXXXXGXXXXXXX
+  XXXGGGGGGGGGGXXXXXXXXXXXXXX
+  XXXGGGGGGGGGGXXXXXXXXXXXXXX
+  XXGGGGGGGGGGGGXXXXXXXXXXXXX
+  XXGGGGGGGGXGXXXXXXXXXXXXXXX
+  XXXXGGGGGXXGXXXXXXXXXXXXXXX
+  XXXXGGGGGXXXXXXXXXXXXXXXXXX
+  XXXXXGGGGXXXXXXXXXXXXXXXXXX
+  XXXXXXXXXXXXXXXXXXXXXXXXXXX
+  """;
+s2.Solve(parser.Parse(example.Split(Environment.NewLine)));
+
+example =
+  """
   XXXXX
   XXEEX
   XXXEX
@@ -183,12 +212,11 @@ class Solver2 : Solver
     foreach (var startPoint in GetUnused(used))
     {
       var plant = data[startPoint.X, startPoint.Y];
-      var results = GetSidesAndArea(data, startPoint, plant, used, default, Direction.Right);
-      var down = Go(startPoint, Direction.Down);
-      var extraSides = !data.InBounds(down) || data[down.X, down.Y] != plant ? 1 : 0;
+      var results = GetSidesAndArea(data, startPoint, plant, used, Edge.Behind, Direction.Right);
 
-      costs += results.Area * (extraSides + results.Sides);
-      Console.WriteLine($"{plant}: {results.Area} x {extraSides + results.Sides}");
+      var subCosts = results.Area * (1 + results.Sides);
+      costs += subCosts;
+      Console.WriteLine($"{plant}: {results.Area} x {1 + results.Sides} - total: {costs}");
     }
 
     return costs;
@@ -196,29 +224,15 @@ class Solver2 : Solver
 
   static (int Area, int Sides) GetSidesAndArea(char[,] map, Point point, char plant, bool[,] used, Edge edge, Direction direction)
   {
+    const bool verbose = true;
     used[point.X, point.Y] = true;
+    if (verbose) Console.WriteLine($"At: {point} - {direction} - edge: {edge} ");
     var area = 1;
     var sides = 0;
 
     var goLeft = NextStep(point, TurnDirection(direction, Turn.Left));
     var goStraight = NextStep(point, direction);
     var goRight = NextStep(point, TurnDirection(direction, Turn.Right));
-
-    if (goStraight.CanGo)
-    {
-      if (!used[goStraight.Point.X, goStraight.Point.Y])
-      {
-        var newEdge = (!goLeft.CanGo ? Edge.LeftHandSide : 0) | (!goRight.CanGo ? Edge.RightHandSide : default);
-        var subResults = GetSidesAndArea(map, goStraight.Point, plant, used, newEdge, goStraight.Direction);
-        sides += subResults.Sides;
-        area += subResults.Area;
-      }
-    }
-    else
-    {
-      sides++;
-      // Console.WriteLine($"At: {point} - {direction} - new side straight ({goStraight.Point})");
-    }
 
     if (goLeft.CanGo)
     {
@@ -235,7 +249,37 @@ class Solver2 : Solver
     else if (!edge.HasFlag(Edge.LeftHandSide))
     {
       sides++;
-      // Console.WriteLine($"At: {point} - {direction} - new side to the left ({goLeft.Point})");
+      if (verbose) Console.WriteLine($"+ new side to the left ({goLeft.Point})");
+    }
+
+    if (goStraight.CanGo)
+    {
+      if (!used[goStraight.Point.X, goStraight.Point.Y])
+      {
+        var newEdge = (!goLeft.CanGo ? Edge.LeftHandSide : 0) | (!goRight.CanGo ? Edge.RightHandSide : default);
+        var subResults = GetSidesAndArea(map, goStraight.Point, plant, used, newEdge, goStraight.Direction);
+        sides += subResults.Sides;
+        area += subResults.Area;
+      }
+      else
+      {
+        // Check for double counting
+        if (!goLeft.CanGo && !NextStep(goStraight.Point, TurnDirection(goStraight.Direction, Turn.Left)).CanGo)
+        {
+          sides--;
+          if (verbose) Console.WriteLine($"- already counted: left side ({goLeft.Point})");
+        }
+        if (!goRight.CanGo && !NextStep(goStraight.Point, TurnDirection(goStraight.Direction, Turn.Right)).CanGo)
+        {
+          sides--;
+          if (verbose) Console.WriteLine($"- already counted: right side ({goRight.Point})");
+        }
+      }
+    }
+    else
+    {
+      sides++;
+      if (verbose) Console.WriteLine($"+ new side straight ({goStraight.Point})");
     }
 
     if (goRight.CanGo)
@@ -245,15 +289,26 @@ class Solver2 : Solver
         Edge newEdge = default;
         if (!goStraight.CanGo)
           newEdge = Edge.LeftHandSide;
+        if (edge.HasFlag(Edge.Behind))
+          newEdge |= Edge.RightHandSide;
         var subResults = GetSidesAndArea(map, goRight.Point, plant, used, newEdge, goRight.Direction);
         sides += subResults.Sides;
         area += subResults.Area;
+      }
+      else
+      {
+        // Check for double counting
+        if (!goStraight.CanGo && !NextStep(goRight.Point, TurnDirection(goRight.Direction, Turn.Left)).CanGo)
+        {
+          sides--;
+          if (verbose) Console.WriteLine($"- already counted: left side ({goRight.Point})");
+        }
       }
     }
     else if (!edge.HasFlag(Edge.RightHandSide))
     {
       sides++;
-      // Console.WriteLine($"At: {point} - {direction} - new side to the right ({goRight.Point})");
+      if (verbose) Console.WriteLine($"+ new side to the right ({goRight.Point})");
     }
 
     return (Area: area, Sides: sides);
@@ -282,7 +337,7 @@ class Solver2 : Solver
   }
 
   [Flags]
-  enum Edge { RightHandSide = 1, LeftHandSide = 2 }
+  enum Edge { RightHandSide = 1, LeftHandSide = 2, Behind = 4 }
 
   enum Turn { Left, Right }
 }
