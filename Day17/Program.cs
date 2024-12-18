@@ -55,7 +55,6 @@ class Parser : IParser<Input>
 
 class Interpreter : ISolver<Input, string>
 {
-  int? A { get; set; }
   public string Solve(Input data)
   {
     var wantedOutput = data.Program.SelectMany(x => new[]
@@ -63,29 +62,34 @@ class Interpreter : ISolver<Input, string>
       (int)x.Instruction, (int)x.ComboOperand
     }).ToArray();
 
-    var found = 0;
-    for (var o = 0; o < data.Program.Length * 2; o++)
+    var solution = 0L;
+    var previous = 0L;
+    for (var i = 0; i < data.Program.Length; i++)
     {
-      var success = false;
-      for (var a = 0; !success && a < 8; a++)
-      {
-        A = found + (a << 3 * o);
-        var result = Execute(data).ToList();
-        if (result.Count <= o || result[o] != wantedOutput[o])
-          continue;
+      var first = 3 ^ 5 ^ previous;
+      long second = 3 ^ 6 ^ wantedOutput[i];
+      Console.WriteLine($"First: {first}, Second: {second}");
+      solution += (first << 3 * i * 2) + (second << 3 * (2 * i + 1));
+      previous = second;
+    }
+    Console.WriteLine("Solution: " + solution);
 
-        found = A.Value;
-        success = true;
-      }
-      if (!success) throw new InvalidOperationException("No solution found");
+    var test = Execute(data with { A = solution }).ToList();
+    if (test.SequenceEqual(wantedOutput))
+      Console.WriteLine("Verified.");
+    else
+    {
+      Console.WriteLine("Failed verification.");
+      Console.WriteLine("Expected: " + string.Join(", ", wantedOutput));
+      Console.WriteLine("Actual: " + string.Join(", ", test));
     }
 
-    return $"A: {found}";
+    return $"{solution}";
   }
 
   IEnumerable<int> Execute(Input data)
   {
-    var a = A ?? data.A;
+    var a = data.A;
     var b = data.B;
     var c = data.C;
     var pc = 0;
@@ -98,10 +102,11 @@ class Interpreter : ISolver<Input, string>
           a >>= GetOperandValue(comboOperand);
           break;
         case Instruction.Bxl:
-          b ^= (int)comboOperand;
+          b ^= (long)comboOperand;
           break;
         case Instruction.Bst:
           b = GetOperandValue(comboOperand) % 8;
+          Console.WriteLine($"B: {b}");
           break;
         case Instruction.Jnz:
           if (a != 0)
@@ -123,6 +128,7 @@ class Interpreter : ISolver<Input, string>
           break;
         case Instruction.Cdv:
           c = a >> GetOperandValue(comboOperand);
+          Console.WriteLine($"C: {c%8}");
           break;
         default:
           throw new InvalidOperationException("Invalid instruction");
@@ -139,9 +145,9 @@ class Interpreter : ISolver<Input, string>
       ComboOperand.One => 1,
       ComboOperand.Two => 2,
       ComboOperand.Three => 3,
-      ComboOperand.A => a,
-      ComboOperand.B => b,
-      ComboOperand.C => c,
+      ComboOperand.A => (int)a,
+      ComboOperand.B => (int)b,
+      ComboOperand.C => (int)c,
       ComboOperand.Reserved => throw new InvalidOperationException("Reserved operand"),
       _ => throw new ArgumentOutOfRangeException(nameof(comboOperand), comboOperand, "Invalid operand")
     };
@@ -172,6 +178,6 @@ enum Instruction
   Cdv = 7,
 }
 
-record Input(int A, int B, int C, (Instruction Instruction, ComboOperand ComboOperand)[] Program);
+record Input(long A, long B, long C, (Instruction Instruction, ComboOperand ComboOperand)[] Program);
 
 
