@@ -15,10 +15,11 @@ Solving.GoParse(example, new Parser());
 
 class Parser : IParser<Input>
 {
-  Regex regexA = new(@"Register A: (\d+)");
-  Regex regexB = new(@"Register B: (\d+)");
-  Regex regexC = new(@"Register C: (\d+)");
-  Regex regexProgram = new("Program: ([0-7]),([0-7])(,([0-7]),([0-7]))*");
+  readonly Regex regexA = new(@"Register A: (\d+)");
+  readonly Regex regexB = new(@"Register B: (\d+)");
+  readonly Regex regexC = new(@"Register C: (\d+)");
+  readonly Regex regexProgram = new("Program: ([0-7]),([0-7])(,([0-7]),([0-7]))*");
+
   public Input Parse(string[] input)
   {
     var a = int.Parse(regexA.Match(input[0]).Groups[1].Value);
@@ -26,8 +27,15 @@ class Parser : IParser<Input>
     var c = int.Parse(regexC.Match(input[2]).Groups[1].Value);
     // Expecting input[3] to be empty
     var match = regexProgram.Match(input[4]);
-    (Instruction Instruction, ComboOperand ComboOperand)[] program = [];
-    return new (a, b, c, program);
+    List<(Instruction Instruction, ComboOperand ComboOperand)> program =
+    [
+      (Instruction: (Instruction)int.Parse(match.Groups[1].Value), ComboOperand: (ComboOperand)int.Parse(match.Groups[2].Value))
+    ];
+    for (var i = 0; i < match.Groups[3].Captures.Count; i++)
+    {
+      program.Add((Instruction: (Instruction)int.Parse(match.Groups[4].Captures[i].Value), ComboOperand: (ComboOperand)int.Parse(match.Groups[5].Captures[i].Value)));
+    }
+    return new (a, b, c, program.ToArray());
   }
 
 }
