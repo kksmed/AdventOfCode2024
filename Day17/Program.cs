@@ -13,7 +13,19 @@ var example =
   Program: 0,1,5,4,3,0
   """;
 
-Solving.Go1(example, new Parser(), new Interpreter());
+// Solving.Go1(example, new Parser(), new Interpreter());
+//
+// var example2 =
+//   """
+//   Register A: 117440
+//   Register B: 0
+//   Register C: 0
+//   
+//   Program: 0,3,5,4,3,0
+//   """;
+// Solving.Go1(example2, new Parser(), new Interpreter());
+
+Solving.Go1(null, new Parser(), new Interpreter());
 
 class Parser : IParser<Input>
 {
@@ -43,11 +55,37 @@ class Parser : IParser<Input>
 
 class Interpreter : ISolver<Input, string>
 {
-  public string Solve(Input data) => string.Join(",",Execute(data));
-
-  static IEnumerable<int> Execute(Input data)
+  int? A { get; set; }
+  public string Solve(Input data)
   {
-    var a =data.A;
+    var wantedOutput = data.Program.SelectMany(x => new[]
+    {
+      (int)x.Instruction, (int)x.ComboOperand
+    }).ToArray();
+
+    var found = 0;
+    for (var o = 0; o < data.Program.Length * 2; o++)
+    {
+      var success = false;
+      for (var a = 0; !success && a < 8; a++)
+      {
+        A = found + (a << 3 * o);
+        var result = Execute(data).ToList();
+        if (result.Count <= o || result[o] != wantedOutput[o])
+          continue;
+
+        found = A.Value;
+        success = true;
+      }
+      if (!success) throw new InvalidOperationException("No solution found");
+    }
+
+    return $"A: {found}";
+  }
+
+  IEnumerable<int> Execute(Input data)
+  {
+    var a = A ?? data.A;
     var b = data.B;
     var c = data.C;
     var pc = 0;
