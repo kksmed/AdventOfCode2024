@@ -57,7 +57,7 @@ class Interpreter : ISolver<Input, string>
       switch (instruction)
       {
         case Instruction.Adv:
-          a /= (1 << GetOperandValue(comboOperand));
+          a >>= GetOperandValue(comboOperand);
           break;
         case Instruction.Bxl:
           b ^= (int)comboOperand;
@@ -70,7 +70,7 @@ class Interpreter : ISolver<Input, string>
           {
             if ((int)comboOperand % 2 == 1)
               throw new InvalidOperationException("Odd jumping!");
-            pc = (int)comboOperand / 2;
+            pc = (int)comboOperand >> 1;
             continue;
           }
           break;
@@ -81,10 +81,10 @@ class Interpreter : ISolver<Input, string>
           yield return GetOperandValue(comboOperand) % 8;
           break;
         case Instruction.Bdv:
-          b = a / (1 << GetOperandValue(comboOperand));
+          b = a >> GetOperandValue(comboOperand);
           break;
         case Instruction.Cdv:
-          c = a / (1 << GetOperandValue(comboOperand));
+          c = a >> GetOperandValue(comboOperand);
           break;
         default:
           throw new InvalidOperationException("Invalid instruction");
