@@ -26,6 +26,18 @@ var example =
 // Solving.Go1(example2, new Parser(), new Interpreter());
 
 Solving.Go1(null, new Parser(), new Interpreter());
+return;
+
+void Test()
+{
+  for(var i = 0; i < 1<<8+3; i++)
+  {
+    var b = i % 8;
+    var output = (b ^ 5 ^ 6 ^ i >> (b ^ 5)) % 8;
+    if (output == 2)
+Console.WriteLine($"Valid: {i}");
+  }
+}
 
 class Parser : IParser<Input>
 {
@@ -53,28 +65,25 @@ class Parser : IParser<Input>
   }
 }
 
-class Interpreter : ISolver<Input, string>
+class Interpreter : ISolver<Input, long>
 {
-  public string Solve(Input data)
+  public long Solve(Input data)
   {
     var wantedOutput = data.Program.SelectMany(x => new[]
     {
       (int)x.Instruction, (int)x.ComboOperand
     }).ToArray();
 
-    var solution = 0L;
-    var previous = 0L;
-    for (var i = 0; i < data.Program.Length; i++)
+    var solution = FindA(data, wantedOutput);
+    if (!solution.HasValue)
     {
-      var first = 3 ^ 5 ^ previous;
-      long second = 3 ^ 6 ^ wantedOutput[i];
-      Console.WriteLine($"First: {first}, Second: {second}");
-      solution += (first << 3 * i * 2) + (second << 3 * (2 * i + 1));
-      previous = second;
+      Console.WriteLine("No solution found.");
+      return -1;
     }
+
     Console.WriteLine("Solution: " + solution);
 
-    var test = Execute(data with { A = solution }).ToList();
+    var test = Execute(data with { A = solution.Value }).ToList();
     if (test.SequenceEqual(wantedOutput))
       Console.WriteLine("Verified.");
     else
@@ -84,10 +93,46 @@ class Interpreter : ISolver<Input, string>
       Console.WriteLine("Actual: " + string.Join(", ", test));
     }
 
-    return $"{solution}";
+    return solution.Value;
   }
 
-  IEnumerable<int> Execute(Input data)
+  static long? FindA(Input program, int[] wantedOutputs, long candidate = 0, int output = 0)
+  {
+    if (output == wantedOutputs.Length)
+    {
+      return candidate;
+    }
+
+    var literal1 = wantedOutputs[3]; // 5
+    var literal2 = wantedOutputs[7]; // 6
+    var wantedOutput = wantedOutputs[output];
+    for(var cShift = 0; cShift < 8; cShift++)
+    {
+      var b = cShift ^ literal1;
+      var c = cShift ^ literal2 ^ wantedOutput;
+      var newValues = (c << cShift) + b;
+      if (cShift < 3 && (newValues % 8 != b || (newValues >> cShift) % 8 != c))
+      {
+        continue;
+      }
+      newValues <<= output * 3;
+      var newCandidate = candidate | (uint)newValues;
+      if (newCandidate != candidate + newValues)
+      {
+        continue;
+      }
+
+      var solution = FindA(program, wantedOutputs, newCandidate, output + 1);
+      if (solution.HasValue)
+      {
+        return solution;
+      }
+    }
+
+    return null;
+  }
+
+  static IEnumerable<int> Execute(Input data)
   {
     var a = data.A;
     var b = data.B;
