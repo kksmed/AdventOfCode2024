@@ -110,14 +110,19 @@ class Interpreter : ISolver<Input, long>
     {
       var b = cShift ^ literal1;
       var c = cShift ^ literal2 ^ wantedOutput;
-      var newValues = (c << cShift) + b;
+      var newValues = (long)c << cShift | (uint)b;
       if (cShift < 3 && (newValues % 8 != b || (newValues >> cShift) % 8 != c))
       {
         continue;
       }
-      newValues <<= output * 3;
-      var newCandidate = candidate | (uint)newValues;
-      if (newCandidate != candidate + newValues)
+
+      var shift = output * 3;
+      newValues <<= shift;
+      if (newValues < 0)
+        throw new InvalidOperationException("Too large value");
+
+      var newCandidate = candidate | newValues;
+      if ((newCandidate >> shift) % 8 != b || (newCandidate >> shift + cShift) % 8 != c)
       {
         continue;
       }
@@ -125,6 +130,8 @@ class Interpreter : ISolver<Input, long>
       var solution = FindA(program, wantedOutputs, newCandidate, output + 1);
       if (solution.HasValue)
       {
+        if ((solution >> shift) % 8 != b || (solution >> shift + cShift) % 8 != c)
+          continue;
         return solution;
       }
     }
