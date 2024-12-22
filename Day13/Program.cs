@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 using Common;
@@ -84,6 +85,38 @@ class Solver2 : ISolver<IEnumerable<ClawMachine>, long>
   long FindMinimum(ClawMachine claw)
   {
     var cm = new CorrectedClawMachine(claw);
+
+    var det = cm.ButtonA.X * cm.ButtonB.Y - cm.ButtonA.Y * cm.ButtonB.X;
+    Console.WriteLine($"Determinat: {det}");
+    if (det == 0)
+    {
+      throw new InvalidOperationException("Determinant is 0");
+    }
+
+    var subA = cm.ButtonB.Y * cm.Prize.X - cm.ButtonB.X * cm.Prize.Y;
+    var subB = cm.ButtonA.X * cm.Prize.Y - cm.ButtonA.Y * cm.Prize.X;
+    
+    var pushACheck =(double)subA / det;
+    var pushBCheck = (double)subB / det;
+    var checkX = pushACheck * cm.ButtonA.X + pushBCheck * cm.ButtonB.X;
+    var checkY = pushACheck * cm.ButtonA.Y + pushBCheck * cm.ButtonB.Y;
+    Console.WriteLine($"{cm.Prize} vs {(X: checkX, Y: checkY)}");
+
+    if (subA % det != 0 || subB % det != 0)
+    {
+      Console.WriteLine($"{claw} - quick fail - not integer");
+      return 0;
+    }
+    var pushesA = (cm.ButtonB.Y * cm.Prize.X - cm.ButtonA.Y* cm.Prize.Y ) / det;
+    var pushesB = (cm.ButtonA.X * cm.Prize.Y - cm.ButtonB.X * cm.Prize.X) / det;
+    if (pushesA < 0 || pushesB < 0)
+    {
+      Console.WriteLine($"{claw} - quick fail - negative");
+      return 0;
+    }
+    Console.WriteLine($"{claw} - Push A: {pushesA} & Push B: {pushesB}");
+
+    return pushesA * costOfA + pushesB * costOfB;
 
     // Test
     var maxAPushes = Math.Min(cm.Prize.X / cm.ButtonA.X, cm.Prize.Y / cm.ButtonA.Y);
