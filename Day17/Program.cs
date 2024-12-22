@@ -13,31 +13,9 @@ var example =
   Program: 0,1,5,4,3,0
   """;
 
-// Solving.Go1(example, new Parser(), new Interpreter());
-//
-// var example2 =
-//   """
-//   Register A: 117440
-//   Register B: 0
-//   Register C: 0
-//   
-//   Program: 0,3,5,4,3,0
-//   """;
-// Solving.Go1(example2, new Parser(), new Interpreter());
-
-Solving.Go1(null, new Parser(), new Interpreter());
-return;
-
-void Test()
-{
-  for(var i = 0; i < 1<<8+3; i++)
-  {
-    var b = i % 8;
-    var output = (b ^ 5 ^ 6 ^ i >> (b ^ 5)) % 8;
-    if (output == 2)
-Console.WriteLine($"Valid: {i}");
-  }
-}
+Solving.Go1(example, new Parser(), new Interpreter());
+Console.WriteLine("### Part 2 ###");
+Solving.Go1(null, new Parser(), new Solver());
 
 class Parser : IParser<Input>
 {
@@ -65,84 +43,11 @@ class Parser : IParser<Input>
   }
 }
 
-class Interpreter : ISolver<Input, long>
+class Interpreter : ISolver<Input, string>
 {
-  public long Solve(Input data)
-  {
-    var wantedOutput = data.Program.SelectMany(x => new[]
-    {
-      (int)x.Instruction, (int)x.ComboOperand
-    }).ToArray();
+  public string Solve(Input data) => string.Join(", ", Execute(data));
 
-    var solution = FindA(data, wantedOutput, []);
-    if (!solution.HasValue)
-    {
-      Console.WriteLine("No solution found.");
-      return -1;
-    }
-
-    Console.WriteLine("Solution: " + solution);
-
-    var test = Execute(data with { A = solution.Value }).ToList();
-    if (test.SequenceEqual(wantedOutput))
-      Console.WriteLine("Verified.");
-    else
-    {
-      Console.WriteLine("Failed verification.");
-      Console.WriteLine("Expected: " + string.Join(", ", wantedOutput));
-      Console.WriteLine("Actual: " + string.Join(", ", test));
-    }
-
-    return solution.Value;
-  }
-
-  static long? FindA(Input program, int[] wantedOutputs, List<(int Value, int Shift)> reserved, long candidate = 0, int output = 0)
-  {
-    if (output == wantedOutputs.Length)
-    {
-      return candidate;
-    }
-
-    var literal1 = wantedOutputs[3]; // 5
-    var literal2 = wantedOutputs[7]; // 6
-    var wantedOutput = wantedOutputs[output];
-    for(var cShift = 0; cShift < 8; cShift++)
-    {
-      var b = cShift ^ literal1;
-      var c = cShift ^ literal2 ^ wantedOutput;
-      var newValues = (long)c << cShift | (uint)b;
-      if (cShift < 3 && (newValues % 8 != b || (newValues >> cShift) % 8 != c))
-      {
-        continue;
-      }
-
-      var shift = output * 3;
-      newValues <<= shift;
-      if (newValues < 0)
-        throw new InvalidOperationException("Too large value");
-
-      var newCandidate = candidate | newValues;
-      if ((newCandidate >> shift) % 8 != b || (newCandidate >> shift + cShift) % 8 != c || reserved.Any(x => (newCandidate >> x.Shift) % 8 != x.Value))
-      {
-        continue;
-      }
-
-      var newReserved = reserved.Where(x => x.Shift > shift).ToList();
-      newReserved.Add((Value: c, Shift: shift + cShift));
-
-      var solution = FindA(program, wantedOutputs, newReserved, newCandidate, output + 1);
-      if (solution.HasValue)
-      {
-        if ((solution >> shift) % 8 != b || (solution >> shift + cShift) % 8 != c)
-          continue;
-        return solution;
-      }
-    }
-
-    return null;
-  }
-
-  static IEnumerable<int> Execute(Input data)
+  public static IEnumerable<int> Execute(Input data)
   {
     var a = data.A;
     var b = data.B;
@@ -229,6 +134,83 @@ class Interpreter : ISolver<Input, long>
       if (value < 0)
         throw new InvalidOperationException("Negative value");
     }
+  }
+}
+
+class Solver : ISolver<Input, long>
+{
+  public long Solve(Input data)
+  {
+    var wantedOutput = data.Program.SelectMany(x => new[]
+    {
+      (int)x.Instruction, (int)x.ComboOperand
+    }).ToArray();
+
+    var solutions = FindA(wantedOutput, []);
+    if (solutions.Count == 0)
+    {
+      Console.WriteLine("No solution found.");
+      return -1;
+    }
+    Console.WriteLine($"Amount of solutions: {solutions.Count}");
+
+    var solution = solutions.Order().First();
+    Console.WriteLine("Smallest solution: " + solution);
+
+    // var test = Interpreter.Execute(data with { A = solution }).ToList();
+    // if (test.SequenceEqual(wantedOutput))
+    //   Console.WriteLine("Verified.");
+    // else
+    // {
+    //   Console.WriteLine("Failed verification.");
+    //   Console.WriteLine("Expected: " + string.Join(", ", wantedOutput));
+    //   Console.WriteLine("Actual: " + string.Join(", ", test));
+    // }
+
+    return solution;
+  }
+
+  static List<long> FindA(int[] wantedOutputs, List<(int Value, int Shift)> reserved, long candidate = 0, int output = 0)
+  {
+    if (output == wantedOutputs.Length)
+    {
+      return [candidate];
+    }
+
+    List<long> newSolutions = [];
+    var literal1 = wantedOutputs[3]; // 5
+    var literal2 = wantedOutputs[7]; // 6
+    var wantedOutput = wantedOutputs[output];
+    for(var cShift = 0; cShift < 8; cShift++)
+    {
+      var b = cShift ^ literal1;
+      var c = cShift ^ literal2 ^ wantedOutput;
+      var newValues = (long)c << cShift | (uint)b;
+      if (cShift < 3 && (newValues % 8 != b || (newValues >> cShift) % 8 != c))
+      {
+        continue;
+      }
+
+      var shift = output * 3;
+      newValues <<= shift;
+      if (newValues < 0)
+        throw new InvalidOperationException("Too large value");
+
+      var newCandidate = candidate | newValues;
+      if ((newCandidate >> shift) % 8 != b || (newCandidate >> shift + cShift) % 8 != c || reserved.Any(x => (newCandidate >> x.Shift) % 8 != x.Value))
+      {
+        continue;
+      }
+
+      var newReserved = reserved.Where(x => x.Shift > shift).ToList();
+      newReserved.Add((Value: c, Shift: shift + cShift));
+
+      var solutions = FindA(wantedOutputs, newReserved, newCandidate, output + 1);
+      solutions = solutions.Where(x => (x >> shift) % 8 == b && (x >> shift + cShift) % 8 == c).ToList();
+      newSolutions.AddRange(solutions);
+    }
+
+    return newSolutions;
   }
 }
 
