@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 using Common;
 
@@ -146,7 +147,9 @@ class Solver : ISolver<Input, long>
       (int)x.Instruction, (int)x.ComboOperand
     }).ToArray();
 
+    var sw = Stopwatch.StartNew();
     var solutions = FindA(wantedOutput, []);
+    sw.Stop();
     if (solutions.Count == 0)
     {
       Console.WriteLine("No solution found.");
@@ -155,7 +158,7 @@ class Solver : ISolver<Input, long>
     Console.WriteLine($"Amount of solutions: {solutions.Count}");
 
     var solution = solutions.Order().First();
-    Console.WriteLine("Smallest solution: " + solution);
+    Console.WriteLine($"Smallest solution: {solution} in {sw.Elapsed}");
 
     // var test = Interpreter.Execute(data with { A = solution }).ToList();
     // if (test.SequenceEqual(wantedOutput))
