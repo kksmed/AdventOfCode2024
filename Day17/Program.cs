@@ -74,7 +74,7 @@ class Interpreter : ISolver<Input, long>
       (int)x.Instruction, (int)x.ComboOperand
     }).ToArray();
 
-    var solution = FindA(data, wantedOutput);
+    var solution = FindA(data, wantedOutput, []);
     if (!solution.HasValue)
     {
       Console.WriteLine("No solution found.");
@@ -96,7 +96,7 @@ class Interpreter : ISolver<Input, long>
     return solution.Value;
   }
 
-  static long? FindA(Input program, int[] wantedOutputs, long candidate = 0, int output = 0)
+  static long? FindA(Input program, int[] wantedOutputs, List<(int Value, int Shift)> reserved, long candidate = 0, int output = 0)
   {
     if (output == wantedOutputs.Length)
     {
@@ -122,12 +122,15 @@ class Interpreter : ISolver<Input, long>
         throw new InvalidOperationException("Too large value");
 
       var newCandidate = candidate | newValues;
-      if ((newCandidate >> shift) % 8 != b || (newCandidate >> shift + cShift) % 8 != c)
+      if ((newCandidate >> shift) % 8 != b || (newCandidate >> shift + cShift) % 8 != c || reserved.Any(x => (newCandidate >> x.Shift) % 8 != x.Value))
       {
         continue;
       }
 
-      var solution = FindA(program, wantedOutputs, newCandidate, output + 1);
+      var newReserved = reserved.Where(x => x.Shift > shift).ToList();
+      newReserved.Add((Value: c, Shift: shift + cShift));
+
+      var solution = FindA(program, wantedOutputs, newReserved, newCandidate, output + 1);
       if (solution.HasValue)
       {
         if ((solution >> shift) % 8 != b || (solution >> shift + cShift) % 8 != c)
@@ -151,14 +154,17 @@ class Interpreter : ISolver<Input, long>
       switch (instruction)
       {
         case Instruction.Adv:
-          a >>= GetOperandValue(comboOperand);
+          a >>= GetIntOperandValue(comboOperand);
+          TestForNegative(a);
           break;
         case Instruction.Bxl:
           b ^= (long)comboOperand;
+          TestForNegative(b);
           break;
         case Instruction.Bst:
           b = GetOperandValue(comboOperand) % 8;
           Console.WriteLine($"B: {b}");
+          TestForNegative(b);
           break;
         case Instruction.Jnz:
           if (a != 0)
@@ -166,21 +172,27 @@ class Interpreter : ISolver<Input, long>
             if ((int)comboOperand % 2 == 1)
               throw new InvalidOperationException("Odd jumping!");
             pc = (int)comboOperand >> 1;
+            TestForNegative(pc);
             continue;
           }
           break;
         case Instruction.Bxc:
           b ^= c;
+          TestForNegative(b);
           break;
         case Instruction.Out:
-          yield return GetOperandValue(comboOperand) % 8;
+          var o = GetOperandValue(comboOperand) % 8;
+          TestForNegative(o);
+          yield return (int)o;
           break;
         case Instruction.Bdv:
-          b = a >> GetOperandValue(comboOperand);
+          b = a >> GetIntOperandValue(comboOperand);
+          TestForNegative(b);
           break;
         case Instruction.Cdv:
-          c = a >> GetOperandValue(comboOperand);
+          c = a >> GetIntOperandValue(comboOperand);
           Console.WriteLine($"C: {c%8}");
+          TestForNegative(c);
           break;
         default:
           throw new InvalidOperationException("Invalid instruction");
@@ -191,18 +203,32 @@ class Interpreter : ISolver<Input, long>
 
     yield break;
 
-    int GetOperandValue(ComboOperand comboOperand) => comboOperand switch
+    int GetIntOperandValue(ComboOperand comboOperand)
+    {
+      var value = GetOperandValue(comboOperand);
+      if (value > int.MaxValue)
+        throw new InvalidOperationException("Too big int value");
+      return (int)value;
+    }
+
+    long GetOperandValue(ComboOperand comboOperand) => comboOperand switch
     {
       ComboOperand.Zero => 0,
       ComboOperand.One => 1,
       ComboOperand.Two => 2,
       ComboOperand.Three => 3,
-      ComboOperand.A => (int)a,
-      ComboOperand.B => (int)b,
-      ComboOperand.C => (int)c,
+      ComboOperand.A => a,
+      ComboOperand.B => b,
+      ComboOperand.C => c,
       ComboOperand.Reserved => throw new InvalidOperationException("Reserved operand"),
       _ => throw new ArgumentOutOfRangeException(nameof(comboOperand), comboOperand, "Invalid operand")
     };
+
+    void TestForNegative(long value)
+    {
+      if (value < 0)
+        throw new InvalidOperationException("Negative value");
+    }
   }
 }
 
