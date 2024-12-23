@@ -68,13 +68,13 @@ public class Parser : IParser<IEnumerable<Robot>>
 
 public class Solver : ISolver<IEnumerable<Robot>, int>
 {
-  protected readonly int wide;
-  protected readonly int tall;
+  protected readonly int Wide;
+  protected readonly int Tall;
   readonly int steps;
   public Solver(int wide = 101, int tall = 103, int steps = 100)
   {
-    this.wide = wide;
-    this.tall = tall;
+    Wide = wide;
+    Tall = tall;
     this.steps = steps;
   }
 
@@ -88,32 +88,32 @@ public class Solver : ISolver<IEnumerable<Robot>, int>
     return robot with
     {
       Velocity = new(
-        robot.Velocity.X >= 0 ? robot.Velocity.X : robot.Velocity.X % wide + wide,
-        robot.Velocity.Y >= 0 ? robot.Velocity.Y : robot.Velocity.Y % tall + tall)
+        robot.Velocity.X >= 0 ? robot.Velocity.X : robot.Velocity.X % Wide + Wide,
+        robot.Velocity.Y >= 0 ? robot.Velocity.Y : robot.Velocity.Y % Tall + Tall)
     };
   }
 
   protected Point Step(Robot robot, int seconds) =>
-    new((robot.Position.X + robot.Velocity.X * seconds) % wide, (robot.Position.Y + robot.Velocity.Y * seconds) % tall);
+    new((robot.Position.X + robot.Velocity.X * seconds) % Wide, (robot.Position.Y + robot.Velocity.Y * seconds) % Tall);
 
   int GetSafetyFactor(IEnumerable<Point> endPositions)
   {
     int[] quadrant = [0, 0, 0, 0];
     foreach (var p in endPositions)
     {
-      if (p.X < wide / 2 && p.Y < tall / 2)
+      if (p.X < Wide / 2 && p.Y < Tall / 2)
       {
         quadrant[0]++;
       }
-      else if (p.X > wide / 2 && p.Y < tall / 2)
+      else if (p.X > Wide / 2 && p.Y < Tall / 2)
       {
         quadrant[1]++;
       }
-      else if (p.X < wide / 2 && p.Y > tall / 2)
+      else if (p.X < Wide / 2 && p.Y > Tall / 2)
       {
         quadrant[2]++;
       }
-      else if (p.X > wide / 2 && p.Y > tall / 2)
+      else if (p.X > Wide / 2 && p.Y > Tall / 2)
       {
         quadrant[3]++;
       }
@@ -123,7 +123,7 @@ public class Solver : ISolver<IEnumerable<Robot>, int>
 }
 
 class Simulator(IEnumerable<Robot> robots) : Solver
-{ 
+{
   Robot[] Robots { get; } = robots.ToArray();
 
   public void Step(int n = 1)
@@ -137,21 +137,24 @@ class Simulator(IEnumerable<Robot> robots) : Solver
   public void Print()
   {
     Console.Clear();
-    for (var y = 0; y < tall; y++)
+    Console.WriteLine(string.Join("", Enumerable.Range(0, Wide).Select(_ => "-")));
+    for (var y = 0; y < Tall; y++)
     {
-      for (var x = 0; x < wide; x++)
+      Console.Write("|");
+      for (var x = 0; x < Wide; x++)
       {
         if (Robots.Any(r => r.Position == new Point(x, y)))
         {
-          Console.Write("X");
+          Console.Write("#");
         }
         else
         {
-          Console.Write(".");
+          Console.Write(" ");
         }
       }
-      Console.WriteLine();
+      Console.WriteLine("|");
     }
+    Console.WriteLine(string.Join("", Enumerable.Range(0, Wide+2).Select(_ => "-")));
   }
 }
 
