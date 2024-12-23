@@ -18,6 +18,12 @@ Solving.Go1(example, new Parser(), new Interpreter());
 Console.WriteLine("### Part 2 ###");
 Solving.Go1(null, new Parser(), new Solver());
 
+Console.WriteLine("### Janus ###");
+var prgm = new Parser().Parse(File.ReadAllLines("janus.txt"));
+Console.WriteLine(string.Join(" ", prgm.Program));
+
+new Solver().Solve(prgm);
+
 class Parser : IParser<Input>
 {
   readonly Regex regexA = new(@"Register A: (\d+)");
@@ -140,15 +146,23 @@ class Interpreter : ISolver<Input, string>
 
 class Solver : ISolver<Input, long>
 {
+  // Hacks for constants
+  int[] wantedOutputs = [];
+  int literal1; // 5
+  int literal2; // 6
+
   public long Solve(Input data)
   {
-    var wantedOutput = data.Program.SelectMany(x => new[]
+    wantedOutputs = data.Program.SelectMany(x => new[]
     {
       (int)x.Instruction, (int)x.ComboOperand
     }).ToArray();
 
+    literal1 = (int)data.Program.First(x => x.Instruction == Instruction.Bxl).ComboOperand;
+    literal2 = (int)data.Program.Where(x => x.Instruction == Instruction.Bxl).Skip(1).First().ComboOperand;
+
     var sw = Stopwatch.StartNew();
-    var solutions = FindA(wantedOutput, []);
+    var solutions = FindA([]);
     sw.Stop();
     if (solutions.Count == 0)
     {
@@ -160,20 +174,20 @@ class Solver : ISolver<Input, long>
     var solution = solutions.Order().First();
     Console.WriteLine($"Smallest solution: {solution} in {sw.Elapsed}");
 
-    // var test = Interpreter.Execute(data with { A = solution }).ToList();
-    // if (test.SequenceEqual(wantedOutput))
-    //   Console.WriteLine("Verified.");
-    // else
-    // {
-    //   Console.WriteLine("Failed verification.");
-    //   Console.WriteLine("Expected: " + string.Join(", ", wantedOutput));
-    //   Console.WriteLine("Actual: " + string.Join(", ", test));
-    // }
+    var test = Interpreter.Execute(data with { A = solution }).ToList();
+    if (test.SequenceEqual(wantedOutputs))
+      Console.WriteLine("Verified.");
+    else
+    {
+      Console.WriteLine("Failed verification.");
+      Console.WriteLine("Expected: " + string.Join(", ", wantedOutputs));
+      Console.WriteLine("Actual: " + string.Join(", ", test));
+    }
 
     return solution;
   }
 
-  static List<long> FindA(int[] wantedOutputs, List<(int Value, int Shift)> reserved, long candidate = 0, int output = 0)
+  List<long> FindA(List<(int Value, int Shift)> reserved, long candidate = 0, int output = 0)
   {
     if (output == wantedOutputs.Length)
     {
@@ -181,9 +195,7 @@ class Solver : ISolver<Input, long>
     }
 
     List<long> newSolutions = [];
-    var literal1 = wantedOutputs[3]; // 5
-    var literal2 = wantedOutputs[7]; // 6
-    var wantedOutput = wantedOutputs[output];
+     var wantedOutput = wantedOutputs[output];
     for(var cShift = 0; cShift < 8; cShift++)
     {
       var b = cShift ^ literal1;
@@ -208,7 +220,7 @@ class Solver : ISolver<Input, long>
       var newReserved = reserved.Where(x => x.Shift > shift).ToList();
       newReserved.Add((Value: c, Shift: shift + cShift));
 
-      var solutions = FindA(wantedOutputs, newReserved, newCandidate, output + 1);
+      var solutions = FindA(newReserved, newCandidate, output + 1);
       solutions = solutions.Where(x => (x >> shift) % 8 == b && (x >> shift + cShift) % 8 == c).ToList();
       newSolutions.AddRange(solutions);
     }
