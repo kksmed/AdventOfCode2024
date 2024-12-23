@@ -145,7 +145,7 @@ public class Solver2(int Blinks) : ISolver<int[], BigInteger>
 //           cachedStone1 = new(s1, [1], [s1]);
 //           countCache[engraving1] = cachedStone1;
 //         }
-//         var 
+//         var
 //         var count2 = engraving2.HasValue ? Count(engraving2.Value, blinks - 1 - i) : 0;
 //         count += count1 + count2;
 //       }
@@ -173,7 +173,7 @@ public class Solver2(int Blinks) : ISolver<int[], BigInteger>
 //       count++;
 //     }
 //
-//     return count; 
+//     return count;
 //   }
 
 // static (long, long?) Blink(long stone)
