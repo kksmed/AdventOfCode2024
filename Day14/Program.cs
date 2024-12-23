@@ -33,19 +33,19 @@ var keys = new Dictionary<char, int>
   ['k'] = 10,
   ['l'] = 100,
   [';'] = 1000,
+  [' '] = int.MaxValue,
 };
 
-var simulator = new Simulator(new Parser().Parse(File.ReadAllLines("input.txt")));
-var steps = 0;
+var simulator = new Simulator(new Parser().Parse(File.ReadAllLines("input.txt")), 3);
 while (true)
 {
   simulator.Print();
 
-  Console.WriteLine($"Steps: {steps}");
+  Console.WriteLine($"Steps: {simulator.Steps}");
   Console.Write("< Press key to continue: ");
   foreach (var key in keys)
   {
-    Console.Write($"{key.Key} = {key.Value} ");
+    Console.Write($"'{key.Key}' = {key.Value} ");
   }
   Console.WriteLine(">");
   var keyPress = Console.ReadKey().KeyChar;
@@ -53,7 +53,6 @@ while (true)
     break;
 
   simulator.Step(stepToTake);
-  steps += stepToTake;
 }
 
 public class Parser : IParser<IEnumerable<Robot>>
@@ -66,18 +65,8 @@ public class Parser : IParser<IEnumerable<Robot>>
         new(int.Parse(x.Groups[3].Value), int.Parse(x.Groups[4].Value))));
 }
 
-public class Solver : ISolver<IEnumerable<Robot>, int>
+public class Solver(int wide = 101, int tall = 103, int steps = 100) : ISolver<IEnumerable<Robot>, int>
 {
-  protected readonly int Wide;
-  protected readonly int Tall;
-  readonly int steps;
-  public Solver(int wide = 101, int tall = 103, int steps = 100)
-  {
-    Wide = wide;
-    Tall = tall;
-    this.steps = steps;
-  }
-
   public int Solve(IEnumerable<Robot> robots) => GetSafetyFactor(robots.Select(x => Step(MakePositive(x), steps)));
 
   Robot MakePositive(Robot robot)
@@ -88,32 +77,32 @@ public class Solver : ISolver<IEnumerable<Robot>, int>
     return robot with
     {
       Velocity = new(
-        robot.Velocity.X >= 0 ? robot.Velocity.X : robot.Velocity.X % Wide + Wide,
-        robot.Velocity.Y >= 0 ? robot.Velocity.Y : robot.Velocity.Y % Tall + Tall)
+        robot.Velocity.X >= 0 ? robot.Velocity.X : robot.Velocity.X % wide + wide,
+        robot.Velocity.Y >= 0 ? robot.Velocity.Y : robot.Velocity.Y % tall + tall)
     };
   }
 
   protected Point Step(Robot robot, int seconds) =>
-    new((robot.Position.X + robot.Velocity.X * seconds) % Wide, (robot.Position.Y + robot.Velocity.Y * seconds) % Tall);
+    new((robot.Position.X + robot.Velocity.X * seconds) % wide, (robot.Position.Y + robot.Velocity.Y * seconds) % tall);
 
   int GetSafetyFactor(IEnumerable<Point> endPositions)
   {
     int[] quadrant = [0, 0, 0, 0];
     foreach (var p in endPositions)
     {
-      if (p.X < Wide / 2 && p.Y < Tall / 2)
+      if (p.X < wide / 2 && p.Y < tall / 2)
       {
         quadrant[0]++;
       }
-      else if (p.X > Wide / 2 && p.Y < Tall / 2)
+      else if (p.X > wide / 2 && p.Y < tall / 2)
       {
         quadrant[1]++;
       }
-      else if (p.X < Wide / 2 && p.Y > Tall / 2)
+      else if (p.X < wide / 2 && p.Y > tall / 2)
       {
         quadrant[2]++;
       }
-      else if (p.X > Wide / 2 && p.Y > Tall / 2)
+      else if (p.X > wide / 2 && p.Y > tall / 2)
       {
         quadrant[3]++;
       }
@@ -122,26 +111,54 @@ public class Solver : ISolver<IEnumerable<Robot>, int>
   }
 }
 
-class Simulator(IEnumerable<Robot> robots) : Solver
+class Simulator(IEnumerable<Robot> robots, int quadrantsN)
 {
+  const int wide = 101;
+  const int tall = 103;
+
   Robot[] Robots { get; } = robots.ToArray();
+  public int Steps { get; private set; }
+
+  long MinSafetyFactor { get; set; } = long.MaxValue;
 
   public void Step(int n = 1)
   {
-    foreach (var robot in Robots)
+    var sign = n > 0 ? 1 : -1;
+    n = Math.Abs(n);
+    for (var i = 0; i < n; i++)
     {
-      robot.Position = Step(robot, n);
+      foreach (var robot in Robots)
+      {
+        robot.Position = new((robot.Position.X + sign * robot.Velocity.X) % wide, (robot.Position.Y + sign * robot.Velocity.Y) % tall);
+        if (robot.Position.X < 0)
+          robot.Position = robot.Position with
+          {
+            X = robot.Position.X + wide
+          };
+        if (robot.Position.Y < 0)
+          robot.Position = robot.Position with
+          {
+            Y = robot.Position.Y + tall
+          };
+      }
+      Steps += sign;
+      var safetyFactor = GetSafetyFactor();
+      if (safetyFactor < MinSafetyFactor)
+      {
+        MinSafetyFactor = safetyFactor;
+        break;
+      }
     }
   }
 
   public void Print()
   {
     Console.Clear();
-    Console.WriteLine(string.Join("", Enumerable.Range(0, Wide).Select(_ => "-")));
-    for (var y = 0; y < Tall; y++)
+    Console.WriteLine(" " + string.Join("", Enumerable.Range(0, wide).Select(_ => "-")));
+    for (var y = 0; y < tall; y++)
     {
       Console.Write("|");
-      for (var x = 0; x < Wide; x++)
+      for (var x = 0; x < wide; x++)
       {
         if (Robots.Any(r => r.Position == new Point(x, y)))
         {
@@ -154,7 +171,27 @@ class Simulator(IEnumerable<Robot> robots) : Solver
       }
       Console.WriteLine("|");
     }
-    Console.WriteLine(string.Join("", Enumerable.Range(0, Wide+2).Select(_ => "-")));
+
+    Console.WriteLine(" " + string.Join("", Enumerable.Range(0, wide).Select(_ => "-")));
+    Console.WriteLine($"Safety factor: {GetSafetyFactor()}");
+  }
+
+  long GetSafetyFactor()
+  {
+    var quadrant = new int[quadrantsN * quadrantsN];
+    foreach (var p in Robots)
+    {
+      for (var qY = 0; qY < quadrantsN;qY++)
+      for (var qX = 0; qX < quadrantsN;qX++)
+      {
+        if (p.Position.X > qX * (wide / quadrantsN) && p.Position.X < (qX+1) * (wide / quadrantsN)
+          && p.Position.Y > qY * (tall / quadrantsN) && p.Position.Y < (qY+1) * (tall / quadrantsN))
+        {
+          quadrant[qY * quadrantsN + qX]++;
+        }
+      }
+    }
+    return quadrant.Aggregate(1L, (x, y) => x * y);
   }
 }
 
