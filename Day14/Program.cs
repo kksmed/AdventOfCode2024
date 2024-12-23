@@ -23,6 +23,39 @@ var example =
 Solving.Go1(example, new Parser(), new Solver(11, 7));
 Solving.Go1(null, new Parser(), new Solver());
 
+var keys = new Dictionary<char, int>
+{
+  ['a'] = -1000,
+  ['s'] = -100,
+  ['d'] = -10,
+  ['f'] = -1,
+  ['j'] = 1,
+  ['k'] = 10,
+  ['l'] = 100,
+  [';'] = 1000,
+};
+
+var simulator = new Simulator(new Parser().Parse(File.ReadAllLines("input.txt")));
+var steps = 0;
+while (true)
+{
+  simulator.Print();
+
+  Console.WriteLine($"Steps: {steps}");
+  Console.Write("< Press key to continue: ");
+  foreach (var key in keys)
+  {
+    Console.Write($"{key.Key} = {key.Value} ");
+  }
+  Console.WriteLine(">");
+  var keyPress = Console.ReadKey().KeyChar;
+  if (!keys.TryGetValue(keyPress, out var stepToTake))
+    break;
+
+  simulator.Step(stepToTake);
+  steps += stepToTake;
+}
+
 public class Parser : IParser<IEnumerable<Robot>>
 {
   static readonly Regex regex = new(@"p=(\d+),(\d+) v=(-?\d+),(-?\d+)");
@@ -33,9 +66,19 @@ public class Parser : IParser<IEnumerable<Robot>>
         new(int.Parse(x.Groups[3].Value), int.Parse(x.Groups[4].Value))));
 }
 
-public class Solver(int Wide = 101, int Tall = 103, int Steps = 100) : ISolver<IEnumerable<Robot>, int>
+public class Solver : ISolver<IEnumerable<Robot>, int>
 {
-  public int Solve(IEnumerable<Robot> robots) => GetSafetyFactor(robots.Select(x => Step(MakePositive(x), Steps)));
+  protected readonly int wide;
+  protected readonly int tall;
+  readonly int steps;
+  public Solver(int wide = 101, int tall = 103, int steps = 100)
+  {
+    this.wide = wide;
+    this.tall = tall;
+    this.steps = steps;
+  }
+
+  public int Solve(IEnumerable<Robot> robots) => GetSafetyFactor(robots.Select(x => Step(MakePositive(x), steps)));
 
   Robot MakePositive(Robot robot)
   {
@@ -45,32 +88,32 @@ public class Solver(int Wide = 101, int Tall = 103, int Steps = 100) : ISolver<I
     return robot with
     {
       Velocity = new(
-        robot.Velocity.X >= 0 ? robot.Velocity.X : robot.Velocity.X % Wide + Wide,
-        robot.Velocity.Y >= 0 ? robot.Velocity.Y : robot.Velocity.Y % Tall + Tall)
+        robot.Velocity.X >= 0 ? robot.Velocity.X : robot.Velocity.X % wide + wide,
+        robot.Velocity.Y >= 0 ? robot.Velocity.Y : robot.Velocity.Y % tall + tall)
     };
   }
 
-  Point Step(Robot robot, int seconds) =>
-    new((robot.StartPoint.X + robot.Velocity.X * seconds) % Wide, (robot.StartPoint.Y + robot.Velocity.Y * seconds) % Tall);
+  protected Point Step(Robot robot, int seconds) =>
+    new((robot.Position.X + robot.Velocity.X * seconds) % wide, (robot.Position.Y + robot.Velocity.Y * seconds) % tall);
 
   int GetSafetyFactor(IEnumerable<Point> endPositions)
   {
     int[] quadrant = [0, 0, 0, 0];
     foreach (var p in endPositions)
     {
-      if (p.X < Wide / 2 && p.Y < Tall / 2)
+      if (p.X < wide / 2 && p.Y < tall / 2)
       {
         quadrant[0]++;
       }
-      else if (p.X > Wide / 2 && p.Y < Tall / 2)
+      else if (p.X > wide / 2 && p.Y < tall / 2)
       {
         quadrant[1]++;
       }
-      else if (p.X < Wide / 2 && p.Y > Tall / 2)
+      else if (p.X < wide / 2 && p.Y > tall / 2)
       {
         quadrant[2]++;
       }
-      else if (p.X > Wide / 2 && p.Y > Tall / 2)
+      else if (p.X > wide / 2 && p.Y > tall / 2)
       {
         quadrant[3]++;
       }
@@ -79,4 +122,40 @@ public class Solver(int Wide = 101, int Tall = 103, int Steps = 100) : ISolver<I
   }
 }
 
-public record Robot(Point StartPoint, Point Velocity);
+class Simulator(IEnumerable<Robot> robots) : Solver
+{ 
+  Robot[] Robots { get; } = robots.ToArray();
+
+  public void Step(int n = 1)
+  {
+    foreach (var robot in Robots)
+    {
+      robot.Position = Step(robot, n);
+    }
+  }
+
+  public void Print()
+  {
+    Console.Clear();
+    for (var y = 0; y < tall; y++)
+    {
+      for (var x = 0; x < wide; x++)
+      {
+        if (Robots.Any(r => r.Position == new Point(x, y)))
+        {
+          Console.Write("X");
+        }
+        else
+        {
+          Console.Write(".");
+        }
+      }
+      Console.WriteLine();
+    }
+  }
+}
+
+public record Robot(Point StartPoint, Point Velocity)
+{
+  public Point Position { get; set; } = StartPoint;
+}
