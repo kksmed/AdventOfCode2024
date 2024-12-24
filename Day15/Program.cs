@@ -27,7 +27,21 @@ var example =
   v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
   """;
 
-Solving.Go1(example, new Parser(), new Solver());
+var e2 =
+  """
+  ########
+  #..O.O.#
+  ##@.O..#
+  #...O..#
+  #.#.O..#
+  #...O..#
+  #......#
+  ########
+
+  <^^>>>vv<v>>v<<
+  """;
+// Solving.Go1(example, new Parser(), new Solver());
+Solving.Go1(e2, new Parser(), new Solver());
 
 class Parser : IParser<(Point Start, Element[,] Warehouse, Direction[] Moves)>
 {
@@ -101,19 +115,16 @@ class Solver : ISolver<(Point Start, Element[,] Warehouse, Direction[] Moves), i
   {
     foreach (var move in moves)
     {
-      switch (move)
+      var newRobot = InnerMove(robot, move);
+      if (newRobot == null)
       {
-        case Direction.Up:
-          break;
-        case Direction.Right:
-          break;
-        case Direction.Down:
-          break;
-        case Direction.Left:
-          break;
-        default:
-          throw new ArgumentOutOfRangeException();
+        Console.WriteLine($"Can't move ({robot} {move})");
+        continue;
       }
+
+      Console.WriteLine($"Moved ({robot}->{newRobot.Value} {move})");
+      robot = newRobot.Value;
+      Print(warehouse);
     }
     return;
 
@@ -164,6 +175,31 @@ class Solver : ISolver<(Point Start, Element[,] Warehouse, Direction[] Moves), i
       warehouse[p.X, p.Y] = Element.Empty;
       return pToMove;
     }
+  }
+
+  static void Print(Element[,] warehouse)
+  {
+    var horizontalLine = Enumerable.Range(0, warehouse.GetLength(0) + 2).Select(x => '#').ToArray();
+    Console.WriteLine(horizontalLine);
+    for (var y = 0; y < warehouse.GetLength(1); y++)
+    {
+      Console.Write('#');
+      for (var x = 0; x < warehouse.GetLength(0); x++)
+      {
+        var element = warehouse[x, y];
+        Console.Write(element switch
+        {
+          Element.Empty => '.',
+          Element.Box => 'O',
+          Element.Wall => '#',
+          Element.Robot => '@',
+          _ => throw new ArgumentOutOfRangeException()
+        });
+      }
+      Console.WriteLine('#');
+    }
+    Console.WriteLine(horizontalLine);
+    Console.WriteLine("");
   }
 
   static int GetGps(Element[,] warehouse)
