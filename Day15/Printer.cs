@@ -2,7 +2,7 @@ namespace Day15;
 
 static class Printer
 {
-  static char ToChar(Direction d) => d switch
+  public static char ToChar(Direction d) => d switch
   {
     Direction.Up => '^',
     Direction.Right => '>',
@@ -33,6 +33,27 @@ static class Printer
       Console.WriteLine('#');
     }
     Console.WriteLine(horizontalLine);
+    Console.WriteLine("");
+  }
+  public static void Print(Element2[,] warehouse)
+  {
+    for (var y = 0; y < warehouse.GetLength(1); y++)
+    {
+      for (var x = 0; x < warehouse.GetLength(0); x++)
+      {
+        var element = warehouse[x, y];
+        Console.Write(element switch
+        {
+          Element2.Empty => '.',
+          Element2.BoxLeft => '[',
+          Element2.BoxRight => ']',
+          Element2.Wall => '#',
+          Element2.Robot => '@',
+          _ => throw new ArgumentOutOfRangeException()
+        });
+      }
+      Console.WriteLine("");
+    }
     Console.WriteLine("");
   }
 }

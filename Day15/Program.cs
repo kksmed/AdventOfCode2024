@@ -48,6 +48,10 @@ var example =
 
 Solving.Go1(example, parser, solverPart1);
 
+Console.WriteLine("### Part 2 ###");
+
+Solving.Go1(example, new Parser2(), new Solver2());
+
 enum Element
 {
   Empty = 0,
