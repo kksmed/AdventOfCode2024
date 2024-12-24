@@ -2,6 +2,25 @@
 
 using Common;
 
+var smallTest =
+  """
+  ########
+  #..O.O.#
+  ##@.O..#
+  #...O..#
+  #.#.O..#
+  #...O..#
+  #......#
+  ########
+
+  <^^>>>vv<v>>v<<
+  """;
+var parser = new Parser();
+var data = parser.Parse(smallTest.Split(Environment.NewLine));
+var solverPart1 = new Solver();
+solverPart1.Solve(data);
+Printer.Print(data.Warehouse);
+
 var example =
   """
   ##########
@@ -27,21 +46,7 @@ var example =
   v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
   """;
 
-var e2 =
-  """
-  ########
-  #..O.O.#
-  ##@.O..#
-  #...O..#
-  #.#.O..#
-  #...O..#
-  #......#
-  ########
-
-  <^^>>>vv<v>>v<<
-  """;
-// Solving.Go1(example, new Parser(), new Solver());
-Solving.Go1(e2, new Parser(), new Solver());
+Solving.Go1(example, parser, solverPart1);
 
 class Parser : IParser<(Point Start, Element[,] Warehouse, Direction[] Moves)>
 {
@@ -63,7 +68,7 @@ class Parser : IParser<(Point Start, Element[,] Warehouse, Direction[] Moves)>
         if (line.All(x => x == '#'))
           continue;
 
-        map.Add(line.Where((_, n) => n > 0 && n < line.Length - 2).Select(x => x switch
+        map.Add(line.Where((_, n) => n > 0 && n < line.Length - 1).Select(x => x switch
         {
           '#' => Element.Wall,
           '.' => Element.Empty,
@@ -115,16 +120,17 @@ class Solver : ISolver<(Point Start, Element[,] Warehouse, Direction[] Moves), i
   {
     foreach (var move in moves)
     {
+      // Print(warehouse);
+      // Console.WriteLine($"Move: {ToChar(move)}");
       var newRobot = InnerMove(robot, move);
       if (newRobot == null)
       {
-        Console.WriteLine($"Can't move ({robot} {move})");
+        // Console.WriteLine($"Can't move ({robot} {move})");
         continue;
       }
 
-      Console.WriteLine($"Moved ({robot}->{newRobot.Value} {move})");
+      // Console.WriteLine($"Moved ({robot}->{newRobot.Value} {move})");
       robot = newRobot.Value;
-      Print(warehouse);
     }
     return;
 
@@ -177,7 +183,29 @@ class Solver : ISolver<(Point Start, Element[,] Warehouse, Direction[] Moves), i
     }
   }
 
-  static void Print(Element[,] warehouse)
+  static int GetGps(Element[,] warehouse)
+  {
+    var gps = 0;
+    for (var x = 0; x < warehouse.GetLength(0); x++)
+    for (var y = 0; y < warehouse.GetLength(1); y++)
+      if (warehouse[x, y] == Element.Box)
+        gps += x + 1 + (y + 1) * 100;
+    return gps;
+  }
+}
+
+static class Printer
+{
+  static char ToChar(Direction d) => d switch
+  {
+    Direction.Up => '^',
+    Direction.Right => '>',
+    Direction.Down => 'v',
+    Direction.Left => '<',
+    _ => throw new ArgumentOutOfRangeException()
+  };
+
+  public static void Print(Element[,] warehouse)
   {
     var horizontalLine = Enumerable.Range(0, warehouse.GetLength(0) + 2).Select(x => '#').ToArray();
     Console.WriteLine(horizontalLine);
@@ -201,17 +229,8 @@ class Solver : ISolver<(Point Start, Element[,] Warehouse, Direction[] Moves), i
     Console.WriteLine(horizontalLine);
     Console.WriteLine("");
   }
-
-  static int GetGps(Element[,] warehouse)
-  {
-    var gps = 0;
-    for (var x = 0; x < warehouse.GetLength(0); x++)
-    for (var y = 0; y < warehouse.GetLength(1); y++)
-      if (warehouse[x, y] == Element.Box)
-        gps += x + 1 + (y + 1) * 100;
-    return gps;
-  }
 }
+
 enum Element
 {
   Empty = 0,
