@@ -50,6 +50,26 @@ Solving.Go1(example, parser, solverPart1);
 
 Console.WriteLine("### Part 2 ###");
 
+var smallTest2 =
+  """
+  #######
+  #...#.#
+  #.....#
+  #..OO@#
+  #..O..#
+  #.....#
+  #######
+
+  <vv<<^^<<^^
+  """;
+//
+// var d2 = new Parser2().Parse(smallTest2.Split(Environment.NewLine));
+// new Solver2().Solve(d2);
+// Printer.Print(d2.Warehouse);
+//
+// var exD2 = new Parser2().Parse(example.Split(Environment.NewLine));
+// new Solver2().Solve(exD2);
+
 Solving.Go1(example, new Parser2(), new Solver2());
 
 enum Element
