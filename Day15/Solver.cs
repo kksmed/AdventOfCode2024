@@ -4,9 +4,9 @@ using Common;
 
 namespace Day15;
 
-class Solver : ISolver<(Point Start, Element[,] Warehouse, Direction[] Moves), int>
+class Solver : ISolver<Data, int>
 {
-  public int Solve((Point Start, Element[,] Warehouse, Direction[] Moves) data)
+  public int Solve(Data data)
   {
     Move(data.Start, data.Warehouse, data.Moves);
     return GetGps(data.Warehouse);

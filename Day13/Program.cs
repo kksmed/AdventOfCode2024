@@ -24,7 +24,7 @@ var example =
   """;
 
 //Solving.Go(example, new Parser(), new Solver(), solverPart2: new Solver2());
-Solving.Go1(example, new Parser(), new Solver2());
+Solving.Go(example, new Parser(), new Solver2());
 
 class Parser : IParser<IEnumerable<ClawMachine>>
 {

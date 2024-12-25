@@ -46,7 +46,7 @@ var example =
   v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
   """;
 
-Solving.Go1(example, parser, solverPart1);
+Solving.Go(example, parser, solverPart1);
 
 Console.WriteLine("### Part 2 ###");
 
@@ -70,7 +70,7 @@ var smallTest2 =
 // var exD2 = new Parser2().Parse(example.Split(Environment.NewLine));
 // new Solver2().Solve(exD2);
 
-Solving.Go1(example, new Parser2(), new Solver2());
+Solving.Go(example, new Parser2(), new Solver2());
 
 enum Element
 {

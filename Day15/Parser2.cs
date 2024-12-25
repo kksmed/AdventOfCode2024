@@ -4,9 +4,9 @@ using Common;
 
 namespace Day15;
 
-class Parser2 : IParser<(Point Start, Element2[,] Warehouse, Direction[] Moves)>
+class Parser2 : IParser<Data2>
 {
-  public (Point Start, Element2[,] Warehouse, Direction[] Moves) Parse(string[] input)
+  public Data2 Parse(string[] input)
   {
     var map = new List<List<Element2>>();
     var moves = new List<Direction>();
@@ -68,6 +68,8 @@ class Parser2 : IParser<(Point Start, Element2[,] Warehouse, Direction[] Moves)>
         warehouse[x, y] = element;
       }
     }
-    return (start, warehouse, moves.ToArray());
+    return new(start, warehouse, moves.ToArray());
   }
 }
+
+record Data2(Point Start, Element2[,] Warehouse, Direction[] Moves);

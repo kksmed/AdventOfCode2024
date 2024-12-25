@@ -2,7 +2,7 @@
 
 using Common;
 
-var example = 
+var example =
   """
   ###############
   #.......#....E#
@@ -21,13 +21,34 @@ var example =
   ###############
   """;
 
-Solving.Go1(example, new Parser(), new Solver1());
+var example2 =
+  """
+  #################
+  #...#...#...#..E#
+  #.#.#.#.#.#.#.#.#
+  #.#.#.#...#...#.#
+  #.#.#.#.###.#.#.#
+  #...#.#.#.....#.#
+  #.#.#.#.#.#####.#
+  #.#...#.#.#.....#
+  #.#.#####.#.###.#
+  #.#.#.......#...#
+  #.#.###.#####.###
+  #.#.#...#.....#.#
+  #.#.#.#####.###.#
+  #.#.#.........#.#
+  #.#.#.#########.#
+  #S#.............#
+  #################
+  """;
 
-Solving.Go1(example, new Parser(), new Solver2());
+Solving.Go(example2, new Parser(), new Solver2(), false);
 
-class Parser : IParser<(Node[,] Map, Point Start, Point End)>
+// Solving.Go(example, new Parser(), new Solver1(), solverPart2: new Solver2());
+
+class Parser : IParser<Data>
 {
-  public (Node[,] Map, Point Start, Point End) Parse(string[] input)
+  public Data Parse(string[] input)
   {
     Point start = new(-1, -1);
     Point end = new(-1, -1);
@@ -47,13 +68,13 @@ class Parser : IParser<(Node[,] Map, Point Start, Point End)>
         end = new(x, y);
     }
 
-    return (map, start, end);
+    return new(map, start, end);
   }
 }
 
-class Solver1 : ISolver<(Node[,] Map, Point Start, Point End), int>
+class Solver1 : ISolver<Data, int>
 {
-  public virtual int Solve((Node[,] Map, Point Start, Point End) data)
+  public virtual int Solve(Data data)
   {
     var unvisited = new List<Node>(data.Map.Cast<Node>().Where(x => !x.IsWall));
 
@@ -73,8 +94,7 @@ class Solver1 : ISolver<(Node[,] Map, Point Start, Point End), int>
           continue;
 
         var newDistance = Math.Min(current.ShortestPath + 1000, current.ShortestPaths[(int)direction]) + 1;
-        if (newDistance < next.ShortestPaths[(int)direction])
-          next.ShortestPaths[(int)direction] = newDistance;
+        next.ShortestPaths[(int)direction] = newDistance;
       }
     }
 
@@ -109,7 +129,7 @@ class Solver1 : ISolver<(Node[,] Map, Point Start, Point End), int>
 
 class Solver2 : Solver1
 {
-  public override int Solve((Node[,] Map, Point Start, Point End) data)
+  public override int Solve(Data data)
   {
     base.Solve(data);
 
@@ -119,6 +139,10 @@ class Solver2 : Solver1
     foreach (var pd in current.ShortestPaths.Select((x, d) => (Path: x, Direction: (Direction)d)).Where(x => x.Path == current.ShortestPath))
       BackTrack(current, pd.Direction);
 
+    // foreach (var point in partOfBestPath)
+    // {
+    //   Console.WriteLine(point);
+    // }
     return partOfBestPath.Count;
 
     void BackTrack(Node node, Direction direction)
@@ -149,6 +173,8 @@ class Solver2 : Solver1
     }
   }
 }
+
+record Data(Node[,] Map, Point Start, Point End);
 
 record Node(Point P, bool IsWall = false)
 {

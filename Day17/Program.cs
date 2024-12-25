@@ -14,9 +14,9 @@ var example =
   Program: 0,1,5,4,3,0
   """;
 
-Solving.Go1(example, new Parser(), new Interpreter());
+Solving.Go(example, new Parser(), new Interpreter());
 Console.WriteLine("### Part 2 ###");
-Solving.Go1(null, new Parser(), new Solver());
+Solving.Go(null, new Parser(), new Solver());
 
 Console.WriteLine("### Janus ###");
 var prgm = new Parser().Parse(File.ReadAllLines("janus.txt"));

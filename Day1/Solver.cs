@@ -2,9 +2,9 @@ using Common;
 
 namespace Day1;
 
-class Parser: IParser<(List<int> A, List<int> B)>
+class Parser: IParser<Data>
 {
-  public (List<int> A, List<int> B) Parse(string[] input)
+  public Data Parse(string[] input)
   {
     var a = new List<int>();
     var b = new List<int>();
@@ -20,18 +20,20 @@ class Parser: IParser<(List<int> A, List<int> B)>
       b.Add(int.Parse(parts[1]));
     }
 
-    return (A: a, B: b);
+    return new(A: a, B: b);
   }
 }
-class Solver1 : ISolver<(List<int> A, List<int> B), int>
+class Solver1 : ISolver<Data, int>
 {
-  public int Solve((List<int> A, List<int> B) data) =>
+  public int Solve(Data data) =>
     data.A.Order().Zip(data.B.Order()).Select(x => Math.Abs(x.First - x.Second)).Sum();
 }
 
-class Solver2 : ISolver<(List<int> A, List<int> B), int>
+record Data(List<int> A, List<int> B);
+
+class Solver2 : ISolver<Data, int>
 {
-  public int Solve((List<int> A, List<int> B) data)
+  public int Solve(Data data)
   {
     var counts = data.B.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
     return data.A.Select(x => x * counts.GetValueOrDefault(x, 0)).Sum();

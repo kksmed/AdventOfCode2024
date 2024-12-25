@@ -20,8 +20,8 @@ var example =
   p=9,5 v=-3,-3
   """;
 
-Solving.Go1(example, new Parser(), new Solver(11, 7));
-Solving.Go1(null, new Parser(), new Solver());
+Solving.Go(example, new Parser(), new Solver(11, 7));
+Solving.Go(null, new Parser(), new Solver());
 
 var keys = new Dictionary<char, int>
 {

@@ -2,9 +2,9 @@ using Common;
 
 namespace Day5;
 
-class Parser : IParser<(List<PageOrderingRule> Rules, List<int[]> Pages)>
+class Parser : IParser<Data>
 {
-  public (List<PageOrderingRule> Rules, List<int[]> Pages) Parse(string[] input)
+  public Data Parse(string[] input)
   {
     var rules = new List<PageOrderingRule>();
     var pages = new List<int[]>();
@@ -29,12 +29,13 @@ class Parser : IParser<(List<PageOrderingRule> Rules, List<int[]> Pages)>
       }
     }
 
-    return (rules, pages);
+    return new(rules, pages);
   }
 }
-class Solver1 : ISolver<(List<PageOrderingRule> Rules, List<int[]> Pages), int>
+
+class Solver1 : ISolver<Data, int>
 {
-  public virtual int Solve((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
+  public virtual int Solve(Data data) =>
     data.Pages.Where(x => IsCorrectOrder(data.Rules, x)).Select(Middle).Sum();
 
   protected static bool IsCorrectOrder(List<PageOrderingRule> rules, int[] pages)
@@ -57,12 +58,14 @@ class Solver1 : ISolver<(List<PageOrderingRule> Rules, List<int[]> Pages), int>
 
 class Solver2 : Solver1
 {
-  public override int Solve((List<PageOrderingRule> Rules, List<int[]> Pages) data) =>
+  public override int Solve(Data data) =>
     data.Pages.Where(x => !IsCorrectOrder(data.Rules, x)).Select(x => FixOrder(data.Rules, x)).Select(Middle).Sum();
 
   static int[] FixOrder(List<PageOrderingRule> rules, int[] pages) =>
     pages.OrderBy(p => p, new PageComparer(rules)).ToArray();
 }
+
+record Data(List<PageOrderingRule> Rules, List<int[]> Pages);
 
 class PageComparer(List<PageOrderingRule> rules) : IComparer<int>
 {
