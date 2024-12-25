@@ -21,7 +21,9 @@ var example =
   ###############
   """;
 
-Solving.Go1(example, new Parser(), new Solver());
+Solving.Go1(example, new Parser(), new Solver1());
+
+Solving.Go1(example, new Parser(), new Solver2());
 
 class Parser : IParser<(Node[,] Map, Point Start, Point End)>
 {
@@ -49,9 +51,9 @@ class Parser : IParser<(Node[,] Map, Point Start, Point End)>
   }
 }
 
-class Solver : ISolver<(Node[,] Map, Point Start, Point End), int>
+class Solver1 : ISolver<(Node[,] Map, Point Start, Point End), int>
 {
-  public int Solve((Node[,] Map, Point Start, Point End) data)
+  public virtual int Solve((Node[,] Map, Point Start, Point End) data)
   {
     var unvisited = new List<Node>(data.Map.Cast<Node>().Where(x => !x.IsWall));
 
@@ -61,8 +63,8 @@ class Solver : ISolver<(Node[,] Map, Point Start, Point End), int>
       unvisited.Remove(current);
       current.IsVisited = true;
 
-      if (current.P == data.End)
-        return current.ShortestPath;
+      if (current.ShortestPath == int.MaxValue)
+        break;
 
       foreach (var direction in Enum.GetValues<Direction>())
       {
@@ -76,42 +78,75 @@ class Solver : ISolver<(Node[,] Map, Point Start, Point End), int>
       }
     }
 
-    throw new InvalidOperationException("No solution");
+    return data.Map[data.End.X, data.End.Y].ShortestPath;
   }
 
-  Node Go(Node[,] map, Point current, Direction direction)
+  protected static Node Go(Node[,] map, Point current, Direction direction)
   {
-    Point next;
-    switch (direction)
+    var next = direction switch
     {
-      case Direction.North:
-        next = current with
-        {
-          Y = current.Y - 1
-        };
-        break;
-      case Direction.East:
-        next = current with
-        {
-          X = current.X + 1
-        };
-        break;
-      case Direction.South:
-        next = current with
-        {
-          Y = current.Y + 1
-        };
-        break;
-      case Direction.West:
-        next = current with
-        {
-          X = current.X - 1
-        };
-        break;
-      default:
-        throw new ArgumentOutOfRangeException(nameof(direction));
-    }
+      Direction.North => current with
+      {
+        Y = current.Y - 1
+      },
+      Direction.East => current with
+      {
+        X = current.X + 1
+      },
+      Direction.South => current with
+      {
+        Y = current.Y + 1
+      },
+      Direction.West => current with
+      {
+        X = current.X - 1
+      },
+      _ => throw new ArgumentOutOfRangeException(nameof(direction))
+    };
     return map[next.X, next.Y];
+  }
+}
+
+class Solver2 : Solver1
+{
+  public override int Solve((Node[,] Map, Point Start, Point End) data)
+  {
+    base.Solve(data);
+
+    var partOfBestPath = new HashSet<Point>();
+
+    var current = data.Map[data.End.X, data.End.Y];
+    foreach (var pd in current.ShortestPaths.Select((x, d) => (Path: x, Direction: (Direction)d)).Where(x => x.Path == current.ShortestPath))
+      BackTrack(current, pd.Direction);
+
+    return partOfBestPath.Count;
+
+    void BackTrack(Node node, Direction direction)
+    {
+      partOfBestPath.Add(node.P);
+      if (node.P == data.Start)
+        return;
+
+      var possibleDirections = new[]
+        {
+          direction, direction.Left(), direction.Right()
+        }.Select(x => (Path: node.ShortestPaths[(int)x], Direction: x))
+        .Select(x => x.Direction == direction || x.Path == int.MaxValue ? x : x with
+        {
+          Path = x.Path + 1000
+        })
+        .ToList();
+
+      var shortestPath = possibleDirections.MinBy(x => x.Path).Path;
+      foreach (var pd in possibleDirections.Where(x => x.Path == shortestPath))
+      {
+        var next = Go(data.Map, node.P, pd.Direction.Revert());
+        if (partOfBestPath.Contains(next.P))
+          continue;
+
+        BackTrack(next, pd.Direction);
+      }
+    }
   }
 }
 
@@ -128,4 +163,33 @@ enum Direction
   East = 1,
   South = 2,
   West = 3
-}   
+}
+
+static class DirectionExtensions
+{
+  public static Direction Revert(this Direction d) => d switch
+  {
+    Direction.North => Direction.South,
+    Direction.East => Direction.West,
+    Direction.South => Direction.North,
+    Direction.West => Direction.East,
+    _ => throw new ArgumentOutOfRangeException(nameof(d))
+  };
+  public static Direction Left(this Direction d) => d switch
+  {
+    Direction.North => Direction.West,
+    Direction.East => Direction.North,
+    Direction.South => Direction.East,
+    Direction.West => Direction.South,
+    _ => throw new ArgumentOutOfRangeException(nameof(d))
+  };
+
+  public static Direction Right(this Direction d) => d switch
+  {
+    Direction.North => Direction.East,
+    Direction.East => Direction.South,
+    Direction.South => Direction.West,
+    Direction.West => Direction.North,
+    _ => throw new ArgumentOutOfRangeException(nameof(d))
+  };
+}
