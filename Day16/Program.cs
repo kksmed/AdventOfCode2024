@@ -41,10 +41,12 @@ var example2 =
   #S#.............#
   #################
   """;
+// Solving.Go(example, new Parser(), new Solver1());
+//
+// Solving.Go(example, new Parser(), new Solver2(), false);
+// Solving.Go(example2, new Parser(), new Solver2(), false);
 
-Solving.Go(example2, new Parser(), new Solver2(), false);
-
-// Solving.Go(example, new Parser(), new Solver1(), solverPart2: new Solver2());
+Solving.Go(example, new Parser(), new Solver1(), solverPart2: new Solver2());
 
 class Parser : IParser<Data>
 {
@@ -76,12 +78,12 @@ class Solver1 : ISolver<Data, int>
 {
   public virtual int Solve(Data data)
   {
-    var unvisited = new List<Node>(data.Map.Cast<Node>().Where(x => !x.IsWall));
+    var unvisitedQueue = new Queue<Node>();
+    unvisitedQueue.Enqueue(data.Map[data.Start.X, data.Start.Y]);
 
-    while (unvisited.Count > 0)
+    while (unvisitedQueue.Count > 0)
     {
-      var current = unvisited.OrderBy(x => x.ShortestPath).First();
-      unvisited.Remove(current);
+      var current = unvisitedQueue.Dequeue();
       current.IsVisited = true;
 
       if (current.ShortestPath == int.MaxValue)
@@ -90,11 +92,13 @@ class Solver1 : ISolver<Data, int>
       foreach (var direction in Enum.GetValues<Direction>())
       {
         var next = Go(data.Map, current.P, direction);
-        if (next.IsWall || next.IsVisited)
+        if (next.IsWall)
           continue;
 
         var newDistance = Math.Min(current.ShortestPath + 1000, current.ShortestPaths[(int)direction]) + 1;
         next.ShortestPaths[(int)direction] = newDistance;
+        if (newDistance == next.ShortestPath)
+          unvisitedQueue.Enqueue(next);
       }
     }
 
