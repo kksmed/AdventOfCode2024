@@ -51,14 +51,14 @@ public class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
       distances[x, y] = x == 0 && y == 0 ? 0 : int.MaxValue;
     }
 
-    var walls = new List<Point>(data.Take(1024));
+    var walls = new HashSet<Point>();
     var visited = new HashSet<Point>();
     var unvisited = new List<Point>
     {
       new(0, 0)
     };
 
-    while (unvisited.Any())
+    while (unvisited.Count != 0)
     {
       var current = unvisited.Select(x => (Point: x, Distance: distances[x.X, x.Y])).First();
       if (current.Point == new Point(Size - 1, Size - 1))
@@ -68,11 +68,17 @@ public class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
       visited.Add(current.Point);
 
       var nextDistance = current.Distance + 1;
+      if (nextDistance > walls.Count)
+      {
+        walls.Add(data[current.Distance]);
+      }
 
       var neighbors = GetNeighbors(current);
       foreach (var next in neighbors)
       {
-        distances[next.X, next.Y] = Math.Min(distances[next.X, next.Y], nextDistance);
+        if (distances[next.X, next.Y] <= nextDistance)
+          continue;
+        distances[next.X, next.Y] = nextDistance;
         unvisited.Add(next);
       }
     }
@@ -97,6 +103,6 @@ public class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
         {
           Y = current.Point.Y - 1
         }
-      }.Where(p => p.X >= 0 && p.X < Size && p.Y >= 0 && p.Y < Size && !walls.Take(current.Distance + 1).Contains(p) && !visited.Contains(p));
+      }.Where(p => p.X >= 0 && p.X < Size && p.Y >= 0 && p.Y < Size && !walls.Contains(p) && !visited.Contains(p));
   }
 }
