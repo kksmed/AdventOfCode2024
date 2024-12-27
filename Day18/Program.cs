@@ -35,52 +35,50 @@ Solving.Go(example, new Parser(), new Solver(7, 12), false);
 
 Solving.Go(null, new Parser(), new Solver());
 
-public class Parser : IParser<Point[]>
+class Parser : IParser<Point[]>
 {
   public Point[] Parse(string[] input) => input.Select(x => x.Split(',').Select(int.Parse).ToList()).Select(x => new Point(x[0], x[1])).ToArray();
 }
 
-public class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
+class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
 {
   public int Solve(Point[] data)
   {
-    var distances = new int[Size, Size];
+    var steps = new int[Size, Size];
     for (var y = 0; y < Size; y++)
     for (var x = 0; x < Size; x++)
     {
-      distances[x, y] = x == 0 && y == 0 ? 0 : int.MaxValue;
+      steps[x, y] = x == 0 && y == 0 ? 0 : int.MaxValue;
     }
 
-    var walls = new HashSet<Point>();
+    var walls = new HashSet<Point>(data.Take(Bytes));
     var visited = new HashSet<Point>();
-    var unvisited = new List<Point>
-    {
-      new(0, 0)
-    };
+    List<Point> unvisited = [new(0, 0)];
 
     while (unvisited.Count != 0)
     {
-      var current = unvisited.Select(x => (Point: x, Distance: distances[x.X, x.Y])).First();
+      var current = unvisited.Select(x => (Point: x, Steps: steps[x.X, x.Y])).First();
       if (current.Point == new Point(Size - 1, Size - 1))
-        return current.Distance;
+        return current.Steps;
 
       unvisited.Remove(current.Point);
       visited.Add(current.Point);
 
-      var nextDistance = current.Distance + 1;
-      if (nextDistance > walls.Count)
-      {
-        walls.Add(data[current.Distance]);
-      }
+      var nextSteps = current.Steps + 1;
+      // if (nextSteps > walls.Count)
+      // {
+      //   walls.Add(data[current.Steps]);
+      // }
 
       var neighbors = GetNeighbors(current);
       foreach (var next in neighbors)
       {
-        if (distances[next.X, next.Y] <= nextDistance)
+        if (steps[next.X, next.Y] <= nextSteps)
           continue;
-        distances[next.X, next.Y] = nextDistance;
+        steps[next.X, next.Y] = nextSteps;
         unvisited.Add(next);
       }
+      // Printer.Print(steps, walls);
     }
     return -1;
 
@@ -104,5 +102,28 @@ public class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
           Y = current.Point.Y - 1
         }
       }.Where(p => p.X >= 0 && p.X < Size && p.Y >= 0 && p.Y < Size && !walls.Contains(p) && !visited.Contains(p));
+  }
+}
+
+static class Printer
+{
+  public static void Print(int[,] steps, HashSet<Point> walls)
+  {
+    Console.Clear();
+    for (var y = 0; y < steps.GetLength(1); y++)
+    {
+      for (var x = 0; x < steps.GetLength(0); x++)
+      {
+        if (walls.Contains(new(x, y)))
+          Console.Write("#X");
+        else if (steps[x, y] == int.MaxValue)
+          Console.Write("  ");
+        else
+          Console.Write($"{steps[x, y]:X2}");
+      }
+      Console.WriteLine();
+    }
+    // Console.WriteLine(" < Press any key to continue >");
+    // Console.ReadKey();
   }
 }
