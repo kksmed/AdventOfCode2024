@@ -35,6 +35,12 @@ Solving.Go(example, new Parser(), new Solver(7, 12), false);
 
 Solving.Go(null, new Parser(), new Solver());
 
+Console.WriteLine("## Part 2 ##");
+
+Solving.Go(example, new Parser(), new Solver2(7, 12), false);
+
+Solving.Go(null, new Parser(), new Solver2());
+
 class Parser : IParser<Point[]>
 {
   public Point[] Parse(string[] input) => input.Select(x => x.Split(',').Select(int.Parse).ToList()).Select(x => new Point(x[0], x[1])).ToArray();
@@ -105,6 +111,21 @@ class Solver(int Size = 71, int Bytes = 1024) : ISolver<Point[], int>
   }
 }
 
+class Solver2(int Size = 71, int InitBytes = 1024) : ISolver<Point[], Point>
+{
+  public Point Solve(Point[] data)
+  {
+    for (var i = InitBytes; i < data.Length; i++)
+    {
+      var newByte = data[i];
+      var solver = new Solver(Size, i + 1);
+      var result = solver.Solve(data);
+      if (result == -1)
+        return newByte;
+    }
+    throw new InvalidOperationException("No solution found");
+  }
+}
 static class Printer
 {
   public static void Print(int[,] steps, HashSet<Point> walls)
