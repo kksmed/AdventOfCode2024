@@ -59,14 +59,16 @@ public static class Solving
       result = solver.Solve(parsedExample);
       sw.Stop();
       Console.WriteLine($"# Example: {result}");
-      Console.WriteLine($"Evaluated in: {sw.Elapsed})");
+      Console.WriteLine($"Evaluated in: {sw.Elapsed}");
     }
 
     if (parsedInput is not null)
     {
       var sw = Stopwatch.StartNew();
       result = solver.Solve(parsedInput);
-      Console.WriteLine($"# Answer: {result} (in {sw.Elapsed})");
+      Console.WriteLine($"# Answer: {result}");
+      Console.WriteLine($"Evaluated in: {sw.Elapsed}");
+
     }
 
     return result;
@@ -76,6 +78,5 @@ public static class Solving
   {
     var definingType = o.GetType();
     Console.WriteLine($"### {definingType.Namespace ?? definingType.Assembly.GetName().Name} ###");
-
   }
 }
