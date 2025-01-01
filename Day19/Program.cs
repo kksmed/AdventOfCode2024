@@ -17,11 +17,12 @@ var example =
   bbrgwb
   """;
 
-// Solving.Go(example, new Parser(), new Solver());
+// Solving.Go(example, new Parser(), new SolverRegEx());
+//
+// Solving.Go(example, new Parser(), new SolverTree());
 
-//Solving.Go(example, new Parser(), new Solver2());
+Solving.Go(example, new Parser(), new SolverTreeAndCache());
 
-Solving.Go(null, new Parser(), new Solver2());
 class Parser : IParser<Data>
 {
 
@@ -31,7 +32,7 @@ class Parser : IParser<Data>
   }
 }
 
-class Solver : ISolver<Data, int>
+class SolverRegEx : ISolver<Data, int>
 {
   public int Solve(Data data)
   {
@@ -59,13 +60,30 @@ class Solver : ISolver<Data, int>
   }
 }
 
-class Solver2 : ISolver<Data, int>
+class SolverTreeAndCache : ISolver<Data, long>
 {
-  public int Solve(Data data)
+  public long Solve(Data data)
+  {
+    Dictionary<string, long> cache = new();
+    var tree = BuildTree(data.Towels);
+    var count = 0L;
+    foreach (var p in data.Patterns)
+    {
+      var sw = Stopwatch.StartNew();
+      var matches = FindMatches(cache, tree, p);
+      count += matches;
+      sw.Stop();
+      Console.WriteLine($"{p} - {matches} - in {sw.Elapsed} (ticks: {sw.ElapsedTicks})");
+    }
+
+    return count;
+  }
+
+  static TowelNode BuildTree(string[] towels)
   {
     var swTreeBuilding = Stopwatch.StartNew();
     TowelNode tree = new(' ');
-    foreach (var towel in data.Towels)
+    foreach (var towel in towels)
     {
       var node = tree;
       foreach (var c in towel)
@@ -86,25 +104,19 @@ class Solver2 : ISolver<Data, int>
     }
     swTreeBuilding.Stop();
     Console.WriteLine($"Tree built in {swTreeBuilding.Elapsed} (ticks: {swTreeBuilding.ElapsedTicks})");
-    var count = 0;
-    foreach (var p in data.Patterns)
-    {
-      var sw = Stopwatch.StartNew();
-      var matches = FindMatches(tree, p);
-      count += matches;
-      sw.Stop();
-      Console.WriteLine($"{p} - {matches} - in {sw.Elapsed} (ticks: {sw.ElapsedTicks})");
-    }
 
-    return count;
+    return tree;
   }
 
-  static int FindMatches(TowelNode towels, string pattern)
+  static long FindMatches(Dictionary<string, long> cache, TowelNode towels, string pattern)
   {
     if (pattern.Length == 0)
       return 1;
 
-    var count = 0;
+    if (cache.TryGetValue(pattern, out var count))
+      return count;
+
+    count = 0L;
     var node = towels;
     for (var i = 0; i < pattern.Length; i++)
     {
@@ -120,19 +132,73 @@ class Solver2 : ISolver<Data, int>
       };
 
       if (newNode == null)
+      {
+        cache[pattern] = count;
         return count;
+      }
 
       node = newNode;
       if (node.Towel != null)
       {
-        count += FindMatches(towels, pattern[(i + 1)..]);
+        count += FindMatches(cache, towels, pattern[(i + 1)..]);
       }
     }
 
+    cache[pattern] = count;
     return count;
   }
 }
 
+class SolverCache : ISolver<Data, int>
+{
+  
+  public int Solve(Data data)
+  {
+    // ## Maybe premature optimization:
+    // var swSetup = Stopwatch.StartNew();
+    // var rareChar = "wubrg".Except(data.Towels.Where(x => x.Length == 1).Select(x => x[0])).First();
+    // var rareCharTowels = data.Towels.Where(x => x.Contains(rareChar)).ToArray();
+    // var restTowels = data.Towels.Except(rareCharTowels).ToArray();
+    //
+    // Console.WriteLine($"Setup in {swSetup.Elapsed} (ticks: {swSetup.ElapsedTicks})");
+
+    Dictionary<string, int> cache = new();
+
+    var count = 0;
+    foreach (var p in data.Patterns)
+    {
+      var sw = Stopwatch.StartNew();
+      var matches = FindMatches(cache, data.Towels, p);
+      count += matches;
+      sw.Stop();
+      Console.WriteLine($"{p} - {matches} - in {sw.Elapsed} (ticks: {sw.ElapsedTicks})");
+    }
+
+    return count;
+  }
+
+  int FindMatches(Dictionary<string, int> cache, string[] towels, string pattern)
+  {
+    if (pattern.Length == 0)
+      return 1;
+
+    if (cache.TryGetValue(pattern, out var count))
+      return count;
+
+    count = 0;
+    foreach (var towel in towels)
+    {
+      var i = pattern.IndexOf(towel, StringComparison.Ordinal);
+      if (i < 0)
+        continue;
+
+      count += FindMatches(cache, towels, pattern[..i]) * FindMatches(cache, towels, pattern[(i+towel.Length)..]);
+    }
+
+    cache[pattern] = count;
+    return count;
+  }
+}
 record Data(string[] Towels, string[] Patterns);
 
 record TowelNode(char Color)
