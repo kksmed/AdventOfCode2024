@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using System.Security.Cryptography;
 
 using Common;
 
@@ -22,9 +21,11 @@ var example =
   ###############
   """;
 
-Console.WriteLine("Example");
-Solving.Go(example, new Parser(), new Solver(1), false);
-Console.WriteLine("Part 1");
+Console.WriteLine("## Example");
+Solving.Go(example, new Parser(), new Solver(1, 2), false);
+Console.WriteLine("## Part 1");
+Solving.Go(null, new Parser(), new Solver(MaxCheat:2));
+Console.WriteLine("## Part 2");
 Solving.Go(null, new Parser(), new Solver());
 
 class Parser : IParser<Data>
@@ -53,14 +54,14 @@ class Parser : IParser<Data>
   }
 }
 
-class Solver(int MinimumGain = 100) : ISolver<Data, int>
+class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
 {
-  public int Solve(Data data) => FindCheat(data, MinimumGain).Count();
+  public int Solve(Data data) => FindCheat(data).Count();
 
-  static IEnumerable<(Point Start, Point End, int Distance)> FindCheat(Data data, int minimumGain)
+  IEnumerable<(Point Start, Point End, int Distance)> FindCheat(Data data)
   {
     var withoutCheats = GetShortestPath(data);
-    Console.WriteLine($"Shortest without cheating: {withoutCheats}");
+    // Console.WriteLine($"Shortest without cheating: {withoutCheats}");
 
     var map = data.Map;
     ResetVisited(map);
@@ -82,16 +83,16 @@ class Solver(int MinimumGain = 100) : ISolver<Data, int>
         }
 
         // Cheat activated
-        var distanceAfterWall = current.ShortestPath + 2;
-        foreach (var afterCheat in next.P.GetNeighbours().Where(p => map.InBounds(p)).Select(p => map[p.X, p.Y]).Where(n => n is { IsVisited: false } && distanceAfterWall <= n.ShortestPath - minimumGain))
+        var cheatStart = next.P;
+        foreach (var afterCheat in next.P.GetCheatNeighbours(MaxCheat).Where(p => map.InBounds(p)).Select(p => map[p.X, p.Y]).Where(n => n is { IsVisited: false, IsWall: false }).Select(x => (Node: x, NewDistance: current.ShortestPath + 1 + Math.Abs(next.P.X - x.P.X) + Math.Abs(next.P.Y - x.P.Y))).Where(x => x.Node.ShortestPath >= x.NewDistance + MinimumGain).Select(x=> (x.Node.P, x.NewDistance)).Distinct())
         {
           var cheatMap = map.Copy();
-          cheatMap[afterCheat.P.X, afterCheat.P.Y].ShortestPath = distanceAfterWall;
+          cheatMap[afterCheat.P.X, afterCheat.P.Y].ShortestPath = afterCheat.NewDistance;
           var newShortestDistance = CompleteShortestPath(cheatMap, unvisitedQueue.Select(x => x.P).Prepend(afterCheat.P), data.End);
-          if (newShortestDistance <= withoutCheats - minimumGain)
+          if (newShortestDistance <= withoutCheats - MinimumGain)
           {
-            Console.WriteLine($"Cheat found: 1: {next.P} 2: {afterCheat.P} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
-            yield return (next.P, afterCheat.P, newShortestDistance);
+            // Console.WriteLine($"Cheat found: 1: {cheatStart} 2: {afterCheat.P} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
+            yield return (cheatStart, afterCheat.P, newShortestDistance);
           }
         }
       }
