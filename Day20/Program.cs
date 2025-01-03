@@ -27,6 +27,7 @@ Solving.Go(example, new Parser(), new Solver(1, 2), false);
 Console.WriteLine("## Part 1");
 Solving.Go(null, new Parser(), new Solver(MaxCheat:2));
 Console.WriteLine("## Part 2");
+// Solving.Go(example, new Parser(), new Solver(50, 20), false);
 Solving.Go(null, new Parser(), new Solver());
 
 class Parser : IParser<Data>
@@ -66,20 +67,18 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
     reverseMap.Get(data.Start).ShortestPath = int.MaxValue;
     var reverseDist = CompleteShortestPath(reverseMap, [data.End], data.Start);
 
-    var sw = Stopwatch.StartNew();
     var withoutCheats = GetShortestPath(data);
     // Console.WriteLine($"Shortest without cheating: {withoutCheats}");
     if (reverseDist != withoutCheats)
       throw new InvalidOperationException($"Distances does not match: {reverseDist} vs {withoutCheats}");
 
-    var cheats = new HashSet<(Point Start, Point End)>();
+    var cheats = new Dictionary<(Point Start, Point End), int>();
     var map = data.Map;
     ResetVisited(map);
 
     var unvisitedQueue = new Queue<Node>();
     unvisitedQueue.Enqueue(map.Get(data.Start));
 
-    var count = 0;
     while (unvisitedQueue.Count > 0)
     {
       var current = unvisitedQueue.Dequeue();
@@ -97,7 +96,7 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
         }
 
         // We only consider each wall once
-        next.IsVisited = true;
+        //next.IsVisited = true;
 
         // Cheat activated
         //var cheatStart = next.P;
@@ -110,18 +109,30 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
           var newShortestDistance = afterCheat.NewDistance + reverseMap.Get(p).ShortestPath;
           if (newShortestDistance <= withoutCheats - MinimumGain)
           {
-            // Console.WriteLine($"Cheat found: 1: {cheatStart} 2: {afterCheat.P} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
-            count++;
-            if (count % 1_000 == 0)
-              Console.WriteLine($"Count: {count} - {sw.Elapsed}");
-            if (!cheats.Add((Start: next.P, End: p)))
-              Console.WriteLine($"#Error# Double count: {(Start: next.P, End: p)}");
+            // Console.WriteLine($"Cheat found: {next.P} -> {p} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
+
+            var saved = withoutCheats - newShortestDistance;
+            if (cheats.TryGetValue((Start: current.P, End: p), out var existingSave))
+              saved = Math.Max(existingSave, saved);
+
+            cheats[(Start: current.P, End: p)] = saved;
           }
         }
       }
     }
 
-    return count;
+    // foreach (var group in cheats.Select(x => (ShortCut: x.Key, Saved: x.Value)).GroupBy(x => x.Saved).OrderBy(x =>x.Key))
+    // {
+    //   Console.WriteLine($"There are {group.Count()} cheats that save {group.Key} picoseconds.");
+    //   if (group.Key == 76)
+    //   {
+    //     foreach (var c in group)
+    //     {
+    //       Console.WriteLine($"Cheat: {c.ShortCut}.");
+    //     }
+    //   }
+    // }
+    return cheats.Count;
   }
 
   static void ResetVisited(Node[,] map)
