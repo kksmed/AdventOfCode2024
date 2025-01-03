@@ -9,12 +9,12 @@ public static class MapExtensions
   public static bool InBounds<T>(this T[,] map, Point p) =>
     p.X >= 0 && p.X < map.GetLength(0) && p.Y >= 0 && p.Y < map.GetLength(1);
 
-  public static IEnumerable<Point> GetCheatNeighbours(this Point p, int maxDistance)
+  public static IEnumerable<Point> GetNeighbourhood(this Point p, int maxDistance)
   {
-    for (var yDiff = 1 - maxDistance; yDiff<maxDistance; yDiff++)
-    for (var xDiff = 1 - maxDistance; xDiff < maxDistance; xDiff++)
+    for (var yDiff = -maxDistance; yDiff <=maxDistance; yDiff++)
+    for (var xDiff = -maxDistance; xDiff <=maxDistance; xDiff++)
     {
-      if (Math.Abs(yDiff) + Math.Abs(xDiff) < maxDistance && !(yDiff == 0 && xDiff == 0))
+      if (Math.Abs(yDiff) + Math.Abs(xDiff) <= maxDistance && !(yDiff == 0 && xDiff == 0))
         yield return new(p.X + xDiff, p.Y + yDiff);
     }
   }

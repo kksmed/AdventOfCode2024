@@ -25,8 +25,8 @@ Console.WriteLine("## Example");
 Solving.Go(example, new Parser(), new Solver(1, 2), false);
 Console.WriteLine("## Part 1");
 Solving.Go(null, new Parser(), new Solver(MaxCheat:2));
-Console.WriteLine("## Part 2");
-Solving.Go(null, new Parser(), new Solver());
+// Console.WriteLine("## Part 2");
+// Solving.Go(null, new Parser(), new Solver());
 
 class Parser : IParser<Data>
 {
@@ -54,11 +54,11 @@ class Parser : IParser<Data>
   }
 }
 
-class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
+class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, long>
 {
-  public int Solve(Data data) => FindCheat(data).Count();
+  public long Solve(Data data) => CountCheats(data);
 
-  IEnumerable<(Point Start, Point End, int Distance)> FindCheat(Data data)
+  long CountCheats(Data data)
   {
     var withoutCheats = GetShortestPath(data);
     // Console.WriteLine($"Shortest without cheating: {withoutCheats}");
@@ -69,12 +69,13 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
     var unvisitedQueue = new Queue<Node>();
     unvisitedQueue.Enqueue(map.Get(data.Start));
 
+    var count = 0L;
     while (unvisitedQueue.Count > 0)
     {
       var current = unvisitedQueue.Dequeue();
       current.IsVisited = true;
 
-      foreach (var next in current.P.GetNeighbours().Where(p => map.InBounds(p)).Select(p => map[p.X, p.Y]).Where(n => n is { IsVisited: false }))
+      foreach (var next in GetNeighbours(map, current).Where(n => n is { IsVisited: false }))
       {
         if (!next.IsWall)
         {
@@ -84,7 +85,7 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
 
         // Cheat activated
         var cheatStart = next.P;
-        foreach (var afterCheat in next.P.GetCheatNeighbours(MaxCheat).Where(p => map.InBounds(p)).Select(p => map[p.X, p.Y]).Where(n => n is { IsVisited: false, IsWall: false }).Select(x => (Node: x, NewDistance: current.ShortestPath + 1 + Math.Abs(next.P.X - x.P.X) + Math.Abs(next.P.Y - x.P.Y))).Where(x => x.Node.ShortestPath >= x.NewDistance + MinimumGain).Select(x=> (x.Node.P, x.NewDistance)).Distinct())
+        foreach (var afterCheat in next.P.GetNeighbourhood(MaxCheat-1).Where(map.InBounds).Select(map.Get).Where(n => n is { IsVisited: false, IsWall: false }).Select(x => (Node: x, NewDistance: current.ShortestPath + 1 + Math.Abs(next.P.X - x.P.X) + Math.Abs(next.P.Y - x.P.Y))).Where(x => x.Node.ShortestPath >= x.NewDistance + MinimumGain).Select(x=> (x.Node.P, x.NewDistance)).Distinct())
         {
           var cheatMap = map.Copy();
           cheatMap[afterCheat.P.X, afterCheat.P.Y].ShortestPath = afterCheat.NewDistance;
@@ -92,11 +93,13 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
           if (newShortestDistance <= withoutCheats - MinimumGain)
           {
             // Console.WriteLine($"Cheat found: 1: {cheatStart} 2: {afterCheat.P} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
-            yield return (cheatStart, afterCheat.P, newShortestDistance);
+            count++;
           }
         }
       }
     }
+
+    return count;
   }
 
   static void ResetVisited(Node[,] map)
@@ -118,17 +121,42 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
       var current = unvisitedQueue.Dequeue();
       current.IsVisited = true;
 
-      if (current.ShortestPath == int.MaxValue)
-        throw new InvalidOperationException("Overflow or bug!");
-
-      foreach (var next in current.P.GetNeighbours().Where(map.InBounds).Select(p => map[p.X, p.Y]).Where(n => n is { IsVisited: false, IsWall: false }))
+      var newShortestPath = current.ShortestPath + 1;
+      foreach (var next in GetNeighbours(map, current).Where(n => n is { IsVisited: false, IsWall: false }))
       {
-        next.ShortestPath = current.ShortestPath + 1;
-        unvisitedQueue.Enqueue(next);
+        if (newShortestPath < next.ShortestPath)
+        {
+          next.ShortestPath = newShortestPath;
+          unvisitedQueue.Enqueue(next);
+        }
+        else
+        {
+          next.IsVisited = true;
+        }
       }
     }
 
     return map.Get(end).ShortestPath;
+  }
+
+  // Mostly, for simpler code
+  static IEnumerable<Node> GetNeighbours(Node[,] map, Node n)
+  {
+    // Right
+    if (n.P.X + 1 < map.GetLength(0))
+      yield return map[n.P.X + 1, n.P.Y];
+
+    // Up
+    if (n.P.Y - 1 >= 0)
+      yield return map[n.P.X, n.P.Y - 1];
+
+    // Left
+    if (n.P.X - 1 >= 0)
+      yield return map[n.P.X - 1, n.P.Y];
+
+    // Down
+    if (n.P.Y + 1 < map.GetLength(1))
+      yield return map[n.P.X, n.P.Y + 1];
   }
 }
 
@@ -136,7 +164,7 @@ record Data(Node[,] Map, Point Start, Point End);
 
 record Node(Point P, bool IsWall = false) : ICopyable<Node>
 {
-  public int ShortestPath { get; set; }
+  public int ShortestPath { get; set; } = int.MaxValue;
   public bool IsVisited { get; set; } = IsWall;
 
   public Node Copy() => new (P, IsWall);
