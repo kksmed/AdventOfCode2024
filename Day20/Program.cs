@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Drawing;
+﻿using System.Drawing;
 
 using Common;
 
@@ -27,7 +26,7 @@ Solving.Go(example, new Parser(), new Solver(1, 2), false);
 Console.WriteLine("## Part 1");
 Solving.Go(null, new Parser(), new Solver(MaxCheat:2));
 Console.WriteLine("## Part 2");
-// Solving.Go(example, new Parser(), new Solver(50, 20), false);
+// Solving.Go(example, new Parser(), new Solver(50), false);
 Solving.Go(null, new Parser(), new Solver());
 
 class Parser : IParser<Data>
@@ -69,15 +68,15 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
 
     var withoutCheats = GetShortestPath(data);
     // Console.WriteLine($"Shortest without cheating: {withoutCheats}");
+
     if (reverseDist != withoutCheats)
       throw new InvalidOperationException($"Distances does not match: {reverseDist} vs {withoutCheats}");
 
-    var cheats = new Dictionary<(Point Start, Point End), int>();
+    var cheats = new List<(Point Start, Point End, int Saved)>();
     var map = data.Map;
     ResetVisited(map);
 
-    var unvisitedQueue = new Queue<Node>();
-    unvisitedQueue.Enqueue(map.Get(data.Start));
+    var unvisitedQueue = new Queue<Node>(map.Cast<Node>().Where(x => !x.IsWall && x.ShortestPath < int.MaxValue).OrderBy(x => x.ShortestPath));
 
     while (unvisitedQueue.Count > 0)
     {
@@ -87,51 +86,31 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
       if (current.ShortestPath > withoutCheats - MinimumGain)
         break;
 
-      foreach (var next in GetNeighbours(map, current).Where(n => n is { IsVisited: false }))
+      foreach (var afterCheat in current.P.GetNeighbourhood(MaxCheat).Where(map.InBounds).Select(map.Get).Where(n => n is { IsVisited: false, IsWall: false })
+        .Select(x => (Node: x, NewDistance: current.ShortestPath + Math.Abs(current.P.X - x.P.X) + Math.Abs(current.P.Y - x.P.Y))).Where(x => x.NewDistance <= x.Node.ShortestPath - MinimumGain))
       {
-        if (!next.IsWall)
+        var p = afterCheat.Node.P;
+        var newShortestDistance = afterCheat.NewDistance + reverseMap.Get(p).ShortestPath;
+        if (newShortestDistance <= withoutCheats - MinimumGain)
         {
-          unvisitedQueue.Enqueue(next);
-          continue;
-        }
-
-        // We only consider each wall once
-        //next.IsVisited = true;
-
-        // Cheat activated
-        //var cheatStart = next.P;
-        foreach (var afterCheat in next.P.GetNeighbourhood(MaxCheat-1).Where(map.InBounds).Select(map.Get).Where(n => n is { IsVisited: false, IsWall: false }).Select(x => (Node: x, NewDistance: current.ShortestPath + 1 + Math.Abs(next.P.X - x.P.X) + Math.Abs(next.P.Y - x.P.Y))).Where(x => x.Node.ShortestPath >= x.NewDistance + MinimumGain))
-        {
-          var p = afterCheat.Node.P;
-          // var cheatMap = map.Copy();
-          // cheatMap[p.X, p.Y].ShortestPath = afterCheat.NewDistance;
-          // var newShortestDistance = CompleteShortestPath(cheatMap, unvisitedQueue.Select(x => x.P).Prepend(p), data.End);
-          var newShortestDistance = afterCheat.NewDistance + reverseMap.Get(p).ShortestPath;
-          if (newShortestDistance <= withoutCheats - MinimumGain)
-          {
-            // Console.WriteLine($"Cheat found: {next.P} -> {p} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
-
-            var saved = withoutCheats - newShortestDistance;
-            if (cheats.TryGetValue((Start: current.P, End: p), out var existingSave))
-              saved = Math.Max(existingSave, saved);
-
-            cheats[(Start: current.P, End: p)] = saved;
-          }
+          // Console.WriteLine($"Cheat found: {current.P} -> {p} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
+          cheats.Add((Start: current.P, End: p, Saved: withoutCheats - newShortestDistance));
         }
       }
     }
 
-    // foreach (var group in cheats.Select(x => (ShortCut: x.Key, Saved: x.Value)).GroupBy(x => x.Saved).OrderBy(x =>x.Key))
+    // foreach (var group in cheats.GroupBy(x => x.Saved).OrderBy(x => x.Key))
     // {
     //   Console.WriteLine($"There are {group.Count()} cheats that save {group.Key} picoseconds.");
-    //   if (group.Key == 76)
+    //   if (group.Key == 68)
     //   {
     //     foreach (var c in group)
     //     {
-    //       Console.WriteLine($"Cheat: {c.ShortCut}.");
+    //       Console.WriteLine($"Cheat: {c}.");
     //     }
     //   }
     // }
+
     return cheats.Count;
   }
 
