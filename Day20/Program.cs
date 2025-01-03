@@ -61,9 +61,16 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
 
   int CountCheats(Data data)
   {
+    var reverseMap = data.Map.Copy();
+    reverseMap.Get(data.End).ShortestPath = 0;
+    reverseMap.Get(data.Start).ShortestPath = int.MaxValue;
+    var reverseDist = CompleteShortestPath(reverseMap, [data.End], data.Start);
+
     var sw = Stopwatch.StartNew();
     var withoutCheats = GetShortestPath(data);
     // Console.WriteLine($"Shortest without cheating: {withoutCheats}");
+    if (reverseDist != withoutCheats)
+      throw new InvalidOperationException($"Distances does not match: {reverseDist} vs {withoutCheats}");
 
     var cheats = new HashSet<(Point Start, Point End)>();
     var map = data.Map;
@@ -77,6 +84,9 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
     {
       var current = unvisitedQueue.Dequeue();
       current.IsVisited = true;
+
+      if (current.ShortestPath > withoutCheats - MinimumGain)
+        break;
 
       foreach (var next in GetNeighbours(map, current).Where(n => n is { IsVisited: false }))
       {
@@ -94,9 +104,10 @@ class Solver(int MinimumGain = 100, int MaxCheat = 20) : ISolver<Data, int>
         foreach (var afterCheat in next.P.GetNeighbourhood(MaxCheat-1).Where(map.InBounds).Select(map.Get).Where(n => n is { IsVisited: false, IsWall: false }).Select(x => (Node: x, NewDistance: current.ShortestPath + 1 + Math.Abs(next.P.X - x.P.X) + Math.Abs(next.P.Y - x.P.Y))).Where(x => x.Node.ShortestPath >= x.NewDistance + MinimumGain))
         {
           var p = afterCheat.Node.P;
-          var cheatMap = map.Copy();
-          cheatMap[p.X, p.Y].ShortestPath = afterCheat.NewDistance;
-          var newShortestDistance = CompleteShortestPath(cheatMap, unvisitedQueue.Select(x => x.P).Prepend(p), data.End);
+          // var cheatMap = map.Copy();
+          // cheatMap[p.X, p.Y].ShortestPath = afterCheat.NewDistance;
+          // var newShortestDistance = CompleteShortestPath(cheatMap, unvisitedQueue.Select(x => x.P).Prepend(p), data.End);
+          var newShortestDistance = afterCheat.NewDistance + reverseMap.Get(p).ShortestPath;
           if (newShortestDistance <= withoutCheats - MinimumGain)
           {
             // Console.WriteLine($"Cheat found: 1: {cheatStart} 2: {afterCheat.P} new distance {newShortestDistance} ({withoutCheats - newShortestDistance})");
