@@ -1,11 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
-
 using Common;
-
 using Day11;
 
-var example= "125 17";
+var example = "125 17";
 
 Solving.Go(example, new Parser(), new Solver(25), new Solver2(75));
 
@@ -18,85 +16,89 @@ Solving.Go(example, new Parser(), new Solver(25), new Solver2(75));
 
 public class Parser : IParser<int[]>
 {
-  public int[] Parse(string[] values) => values.SelectMany(x => x.Split(' ')).Select(int.Parse).ToArray();
+    public int[] Parse(string[] values) =>
+        values.SelectMany(x => x.Split(' ')).Select(int.Parse).ToArray();
 }
 
 public class Solver(int Blinks) : ISolver<int[], int>
 {
-  public int Solve(int[] values)
-  {
-    var stones = values.Select(x => (long)x).ToList();
-    for (var i = 0; i < Blinks; i++)
+    public int Solve(int[] values)
     {
-      stones = Blink(stones).ToList();
+        var stones = values.Select(x => (long)x).ToList();
+        for (var i = 0; i < Blinks; i++)
+        {
+            stones = Blink(stones).ToList();
+        }
+
+        return stones.Count;
     }
 
-    return stones.Count;
-  }
-
-  static IEnumerable<long> Blink(IEnumerable<long> stones)
-  {
-    foreach (var stone in stones)
+    static IEnumerable<long> Blink(IEnumerable<long> stones)
     {
-      if (stone == 0)
-      {
-        yield return 1;
-        continue;
-      }
+        foreach (var stone in stones)
+        {
+            if (stone == 0)
+            {
+                yield return 1;
+                continue;
+            }
 
-      var engraving = stone.ToString();
-      var digits = engraving.Length;
-      if (digits % 2 == 0)
-      {
-        var half = digits / 2;
-        yield return long.Parse(engraving[..half]);
-        yield return long.Parse(engraving[half..]);
-        continue;
-      }
+            var engraving = stone.ToString();
+            var digits = engraving.Length;
+            if (digits % 2 == 0)
+            {
+                var half = digits / 2;
+                yield return long.Parse(engraving[..half]);
+                yield return long.Parse(engraving[half..]);
+                continue;
+            }
 
-      yield return stone * 2024;
+            yield return stone * 2024;
+        }
     }
-  }
 }
 
 public class Solver2(int Blinks) : ISolver<int[], BigInteger>
 {
-  public BigInteger Solve(int[] values)
-  {
-    var stones = values.ToDictionary(x => new BigInteger(x), x => BigInteger.One);
-    for (var i = 0; i < Blinks; i++)
+    public BigInteger Solve(int[] values)
     {
-      stones = Blink(stones).GroupBy(x => x.Key).ToDictionary(x => x.Key, x => x.Select(y => y.Value).Aggregate(BigInteger.Add));
+        var stones = values.ToDictionary(x => new BigInteger(x), x => BigInteger.One);
+        for (var i = 0; i < Blinks; i++)
+        {
+            stones = Blink(stones)
+                .GroupBy(x => x.Key)
+                .ToDictionary(x => x.Key, x => x.Select(y => y.Value).Aggregate(BigInteger.Add));
+        }
+
+        return stones.Values.Aggregate(BigInteger.Add);
     }
 
-    return stones.Values.Aggregate(BigInteger.Add);
-  }
-
-  static IEnumerable<KeyValuePair<BigInteger, BigInteger>> Blink(IEnumerable<KeyValuePair<BigInteger, BigInteger>> stones)
-  {
-    foreach (var stone in stones)
+    static IEnumerable<KeyValuePair<BigInteger, BigInteger>> Blink(
+        IEnumerable<KeyValuePair<BigInteger, BigInteger>> stones
+    )
     {
-      if (stone.Key.IsZero)
-      {
-        yield return new(BigInteger.One, stone.Value);
-        continue;
-      }
+        foreach (var stone in stones)
+        {
+            if (stone.Key.IsZero)
+            {
+                yield return new(BigInteger.One, stone.Value);
+                continue;
+            }
 
-      var engraving = stone.Key.ToString();
-      var digits = engraving.Length;
-      if (digits % 2 == BigInteger.Zero)
-      {
-        var half = digits / 2;
-        yield return new(BigInteger.Parse(engraving[..half]), stone.Value);
-        yield return new(BigInteger.Parse(engraving[half..]), stone.Value);
-        continue;
-      }
+            var engraving = stone.Key.ToString();
+            var digits = engraving.Length;
+            if (digits % 2 == BigInteger.Zero)
+            {
+                var half = digits / 2;
+                yield return new(BigInteger.Parse(engraving[..half]), stone.Value);
+                yield return new(BigInteger.Parse(engraving[half..]), stone.Value);
+                continue;
+            }
 
-      yield return new(stone.Key * 2024, stone.Value);
+            yield return new(stone.Key * 2024, stone.Value);
+        }
     }
-  }
 }
-
 
 // public class Solver4(int Blinks) : ISolver<int[], int>
 // {
@@ -198,7 +200,7 @@ public class Solver2(int Blinks) : ISolver<int[], BigInteger>
 
 record Stone(long Engraving)
 {
-  public (Stone, Stone?)? Next { get; set; }
+    public (Stone, Stone?)? Next { get; set; }
 
-  public int Depth { get; set; }
+    public int Depth { get; set; }
 }

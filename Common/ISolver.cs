@@ -4,6 +4,6 @@ namespace Common;
 
 public interface ISolver<in TData, out TResult>
 {
-  [return: NotNull]
-  TResult Solve(TData data);
+    [return: NotNull]
+    TResult Solve(TData data);
 }
