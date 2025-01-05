@@ -42,39 +42,93 @@ class Solver : ISolver<IEnumerable<DoorCode>, int>
     foreach (var doorCode in data)
     {
       var directions = ConvertToDirections(doorCode.Buttons).ToList();
-      // Console.WriteLine($"Door code ({doorCode}):");
-      // doorCode.Buttons.Print();
-      // Console.WriteLine("Directions (1st):");
-      // directions.Print();
-      directions = LayerDirections(directions).ToList();
-      // Console.WriteLine("Directions (2nd):");
-      // directions.Print();
-      directions = LayerDirections(directions).ToList();
-      // Console.WriteLine("Directions (3rd):");
-      // directions.Print();
-
       var complexity = doorCode.Code * directions.Count;
       complexitySum += complexity;
-      // Console.WriteLine($"Complexity ({directions.Count}x{doorCode.Code}): {complexity}");
+      Console.WriteLine($"Complexity ({directions.Count}x{doorCode.Code}): {complexity}");
     }
 
     return complexitySum;
   }
 
-  IEnumerable<DirectionalKeypad> ConvertToDirections(NumericKeypad[] doorCode)
+  static IEnumerable<DirectionalKeypad> ConvertToDirections(NumericKeypad[] doorCode, int layers = 2)
   {
     var position = NumericKeypad.A.GetPosition();
     var gap = NumericKeypad.Gap.GetPosition();
+    List<DirectionalKeypad> solution = [];
     foreach (var keyToPush in doorCode)
     {
       var newPosition = keyToPush.GetPosition();
-      foreach (var b in MoveToAndPush(position, keyToPush.GetPosition(), gap))
-      {
-        yield return b;
-      }
+      var moves = MoveToAndPush(position, keyToPush.GetPosition()).ToArray();
+      var permutations = GetPermutations(moves, 0, moves.Length - 1)
+        .Where(x => AvoidGap(x, position, gap))
+        .Select(x => x.Append(DirectionalKeypad.A).ToArray())
+        .ToList();
+      if (permutations.Count == 0)
+        throw new InvalidOperationException($"Cannot move from {position} -> {newPosition} to push {keyToPush}");
 
+      for (var i = 0; i < layers; i++)
+        permutations = LayerDirectionalKeys(permutations);
+
+      solution.AddRange(permutations.MinBy(x => x.Length) ?? throw new InvalidOperationException("No solution"));
       position = newPosition;
     }
+
+    return solution;
+  }
+
+  static List<DirectionalKeypad[]> LayerDirectionalKeys(List<DirectionalKeypad[]> previousPermutations)
+  {
+    var gap = DirectionalKeypad.Gap.GetPosition();
+    List<DirectionalKeypad[]> layeredPermutations = [];
+    foreach (var permutation in previousPermutations)
+    {
+      List<DirectionalKeypad[]> newPermutations =
+      [
+        [],
+      ];
+      var position = DirectionalKeypad.A.GetPosition();
+      foreach (var keyToPush in permutation)
+      {
+        var newPosition = keyToPush.GetPosition();
+        var moves = MoveToAndPush(position, keyToPush.GetPosition()).ToArray();
+        var subPermutations = GetPermutations(moves, 0, moves.Length - 1)
+          .Where(x => AvoidGap(x, position, gap))
+          .Select(x => x.Append(DirectionalKeypad.A))
+          .ToList();
+        if (subPermutations.Count == 0)
+          throw new InvalidOperationException($"Cannot move from {position} -> {newPosition} to push {keyToPush}");
+
+        newPermutations = newPermutations
+          .SelectMany(head => subPermutations.Select(tail => head.Concat(tail).ToArray()))
+          .ToList();
+
+        position = newPosition;
+      }
+      layeredPermutations.AddRange(newPermutations);
+    }
+
+    return layeredPermutations;
+  }
+
+  static bool AvoidGap(IEnumerable<DirectionalKeypad> moves, Point start, Point gap)
+  {
+    var position = start;
+    foreach (var move in moves)
+    {
+      position = move switch
+      {
+        DirectionalKeypad.A or DirectionalKeypad.Gap => throw new InvalidOperationException("Should never happen!"),
+        DirectionalKeypad.Up => position with { Y = position.Y - 1 },
+        DirectionalKeypad.Left => position with { X = position.X - 1 },
+        DirectionalKeypad.Down => position with { Y = position.Y + 1 },
+        DirectionalKeypad.Right => position with { X = position.X + 1 },
+        _ => throw new ArgumentOutOfRangeException(nameof(moves), move, null),
+      };
+
+      if (position == gap)
+        return false;
+    }
+    return true;
   }
 
   IEnumerable<DirectionalKeypad> LayerDirections(IEnumerable<DirectionalKeypad> directionalKeypads)
@@ -92,28 +146,25 @@ class Solver : ISolver<IEnumerable<DoorCode>, int>
     }
   }
 
-  static IEnumerable<DirectionalKeypad> MoveToAndPush(Point position, Point buttonPosition, Point? gap = null)
+  static IEnumerable<DirectionalKeypad> MoveToAndPush(Point position, Point buttonPosition)
   {
-    gap ??= new(0, 0);
     var xDiff = buttonPosition.X - position.X;
     var yDiff = buttonPosition.Y - position.Y;
 
-    // Firstly, move horizontal if not in same row as "gap"
-    // '<' (left) is more demanding then other buttons so we want to do these "together"
-    if (position.Y != gap.Value.Y)
-      while (xDiff != 0)
+    // Firstly, move horizontal
+    while (xDiff != 0)
+    {
+      if (xDiff < 0)
       {
-        if (xDiff < 0)
-        {
-          yield return DirectionalKeypad.Left;
-          xDiff++;
-        }
-        else
-        {
-          yield return DirectionalKeypad.Right;
-          xDiff--;
-        }
+        yield return DirectionalKeypad.Left;
+        xDiff++;
       }
+      else
+      {
+        yield return DirectionalKeypad.Right;
+        xDiff--;
+      }
+    }
 
     // Then, move vertical
     while (yDiff != 0)
@@ -129,32 +180,45 @@ class Solver : ISolver<IEnumerable<DoorCode>, int>
         yDiff--;
       }
     }
+  }
 
-    // Now, move horizontal in case we moved vertical first
-    while (xDiff != 0)
+  static IEnumerable<DirectionalKeypad[]> GetPermutations(DirectionalKeypad[] elements, int recursionDepth, int maxDepth)
+  {
+    if (maxDepth < 0)
+      return [elements];
+
+    if (recursionDepth == maxDepth)
     {
-      if (xDiff < 0)
-      {
-        yield return DirectionalKeypad.Left;
-        xDiff++;
-      }
-      else
-      {
-        yield return DirectionalKeypad.Right;
-        xDiff--;
-      }
+      return [elements.ToArray()];
     }
 
-    // Lastly, push the button
-    yield return DirectionalKeypad.A;
+    List<DirectionalKeypad[]> permutations = [];
+    for (var i = recursionDepth; i <= maxDepth; i++)
+    {
+      Swap(ref elements[recursionDepth], ref elements[i]);
+      permutations.AddRange(GetPermutations(elements, recursionDepth + 1, maxDepth));
+      // backtrack
+      Swap(ref elements[recursionDepth], ref elements[i]);
+    }
+
+    return permutations.DistinctBy(Extensions.ToString);
+
+    static void Swap(ref DirectionalKeypad a, ref DirectionalKeypad b)
+    {
+      if (a == b)
+        return;
+      a ^= b;
+      b ^= a;
+      a ^= b;
+    }
   }
 }
 
 static class Extensions
 {
-  public static void Print(this IEnumerable<NumericKeypad> keys) => Console.WriteLine(keys.Select(ToChar).ToArray());
+  public static string ToString(this IEnumerable<NumericKeypad> keys) => string.Concat(keys.Select(ToChar));
 
-  public static void Print(this IEnumerable<DirectionalKeypad> keys) => Console.WriteLine(keys.Select(ToChar).ToArray());
+  public static string ToString(this IEnumerable<DirectionalKeypad> keys) => string.Concat(keys.Select(ToChar));
 
   static char ToChar(NumericKeypad b) =>
     b switch
