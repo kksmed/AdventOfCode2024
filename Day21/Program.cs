@@ -10,9 +10,23 @@ var example = """
   379A
   """;
 
-Solving.Go(example, new Parser(), new Solver(2));
+var gap = DirectionalKeypad.Gap.GetPosition();
 
-Solving.Go(null, new Parser(), new Solver(25));
+// foreach (var from in Enum.GetValues<DirectionalKeypad>().Where(x => x != DirectionalKeypad.Gap))
+// foreach (var to in Enum.GetValues<DirectionalKeypad>().Where(x => x != DirectionalKeypad.Gap && x != from))
+// {
+//   var sw = Stopwatch.StartNew();
+//   Console.WriteLine($"Best way between: {from} - {to}");
+//   var best = Keypad.PushKeyTheBestWay(from.GetPosition(), to.GetPosition(), gap);
+//   Console.WriteLine(string.Join(", ", best));
+//   Console.WriteLine($"In: {sw.Elapsed}");
+// }
+
+var best = Keypad.PushKeyTheBestWay(DirectionalKeypad.Down.GetPosition(), DirectionalKeypad.A.GetPosition(), gap);
+
+// Solving.Go(example, new Parser(), new Solver(2));
+//
+// Solving.Go(null, new Parser(), new Solver(25));
 
 class Parser : IParser<IEnumerable<DoorCode>>
 {
@@ -75,8 +89,6 @@ class Solver(int Layers) : ISolver<IEnumerable<DoorCode>, int>
     return solution;
   }
 
-  // readonly Dictionary<(string Moves, Point Position), DirectionalKeypad[]> cache = new();
-
   static List<DirectionalKeypad> LayerSequence(DirectionalKeypad[] sequence, int layers)
   {
     if (sequence.Length == 0)
@@ -108,8 +120,14 @@ class Solver(int Layers) : ISolver<IEnumerable<DoorCode>, int>
 
 static class Keypad
 {
+  static readonly Dictionary<(Point From, Point To, Point Gap), DirectionalKeypad[]> cache = new();
+
   public static DirectionalKeypad[] PushKeyTheBestWay(Point startPosition, Point buttonPosition, Point gapPosition)
   {
+    var cacheKey = (startPosition, buttonPosition, gapPosition);
+    if (cache.TryGetValue(cacheKey, out var value))
+      return value;
+
     var moves = MoveToAndPush(startPosition, buttonPosition).ToArray();
     var permutations = GetPermutations(moves, 0, moves.Length - 1)
       .Where(x => AvoidGap(x, startPosition, gapPosition))
@@ -118,14 +136,17 @@ static class Keypad
     if (permutations.Count == 0)
       throw new InvalidOperationException($"Cannot move from {startPosition} -> {buttonPosition}");
 
-    return FindBestPermutation(permutations, 4).BestPermutation;
+    var best = FindBestPermutation(permutations).BestPermutation;
+    cache[cacheKey] = best;
+
+    return best;
   }
 
   static (DirectionalKeypad[] BestPermutation, DirectionalKeypad[] FinalSequence, int Layers) FindBestPermutation(
-    List<DirectionalKeypad[]> permutations,
-    int maxLayers
+    List<DirectionalKeypad[]> permutations
   )
   {
+    const int maxLayering = 4;
     if (permutations.Count == 0)
       throw new ArgumentException("Must be at least one.", nameof(permutations));
     if (permutations.Count == 1)
@@ -133,7 +154,7 @@ static class Keypad
 
     var layeredPermutations = permutations.Select(x => (Initial: x, Layered: new List<DirectionalKeypad[]>([x]))).ToList();
     var layer = 0;
-    for (; layer < maxLayers; layer++)
+    for (; layer < maxLayering; layer++)
     {
       for (var i = 0; i < layeredPermutations.Count; i++)
       {
@@ -155,6 +176,13 @@ static class Keypad
       }
     }
 
+    //throw new InvalidOperationException("Cannot determine best move");
+    Console.WriteLine(
+      $"Tied best between {layeredPermutations.Count}: {string.Join("& ", layeredPermutations.Select(x => string.Join(", ", x.Initial)))}"
+    );
+    Console.WriteLine(
+      $"All with minimum length of: {layeredPermutations.First().Layered.First().Length} sequence: {string.Join(", ", layeredPermutations.Select(x => x.Layered.Count))}"
+    );
     // TODO: How to pick if more?
     var winningSequence = layeredPermutations.First();
     if (winningSequence.Layered.Count < 1)
