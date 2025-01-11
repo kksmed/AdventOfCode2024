@@ -10,8 +10,6 @@ class StringSolver(int Layers) : ISolver<string[], long>
 {
   public long Solve(string[] data)
   {
-    InitializeCache();
-
     var complexitySum = 0L;
     foreach (var doorCode in data)
     {
@@ -40,10 +38,10 @@ class StringSolver(int Layers) : ISolver<string[], long>
     return complexitySum;
   }
 
-  static void InitializeCache()
+  public static void InitializeCache()
   {
     Point gap = new(0, 0);
-    var directionalButtons = "<>^vA";
+    const string directionalButtons = "<>^vA";
     foreach (var from in directionalButtons)
     foreach (var to in directionalButtons)
     {
