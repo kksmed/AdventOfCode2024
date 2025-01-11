@@ -10,6 +10,8 @@ class StringSolver(int Layers) : ISolver<string[], long>
 {
   public long Solve(string[] data)
   {
+    InitializeCache();
+
     var complexitySum = 0L;
     foreach (var doorCode in data)
     {
@@ -36,6 +38,24 @@ class StringSolver(int Layers) : ISolver<string[], long>
     }
 
     return complexitySum;
+  }
+
+  static void InitializeCache()
+  {
+    Point gap = new(0, 0);
+    var directionalButtons = "<>^vA";
+    foreach (var from in directionalButtons)
+    foreach (var to in directionalButtons)
+    {
+      var sw = Stopwatch.StartNew();
+      Console.WriteLine($"Finding shortest way between: {from} and {to}...");
+      var solution = GetDirectionsToPressKeyTheShortestWay(
+        GetDirectionalKeyPosition(from),
+        GetDirectionalKeyPosition(to),
+        gap
+      );
+      Console.WriteLine($"Solution: {solution} int {sw.Elapsed}");
+    }
   }
 
   static IEnumerable<string> AddLayer(string sequence)
@@ -82,7 +102,7 @@ class StringSolver(int Layers) : ISolver<string[], long>
 
   static (string BestPermutation, string FinalSequence, int Layers) FindShortestPermutation(List<string> permutations)
   {
-    const int maxLayering = 3;
+    const int maxLayering = 4;
     switch (permutations.Count)
     {
       case 0:
