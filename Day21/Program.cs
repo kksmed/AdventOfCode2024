@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
 using Common;
+using Day21;
 
 var example = """
   029A
@@ -22,11 +23,14 @@ var gap = DirectionalKeypad.Gap.GetPosition();
 //   Console.WriteLine($"In: {sw.Elapsed}");
 // }
 
-var best = Keypad.PushKeyTheBestWay(DirectionalKeypad.Down.GetPosition(), DirectionalKeypad.A.GetPosition(), gap);
+//var best = Keypad.PushKeyTheBestWay(DirectionalKeypad.Down.GetPosition(), DirectionalKeypad.A.GetPosition(), gap);
 
 // Solving.Go(example, new Parser(), new Solver(2));
 //
 // Solving.Go(null, new Parser(), new Solver(25));
+
+Solving.Go(example, new NoParser(), new StringSolver(2));
+Solving.Go(null, new NoParser(), new StringSolver(25));
 
 class Parser : IParser<IEnumerable<DoorCode>>
 {
