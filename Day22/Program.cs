@@ -8,7 +8,7 @@ var example = """
   2024
   """;
 
-Solving.Go(example, new IntParser(), new Solver(2000));
+// Solving.Go(example, new IntParser(), new Solver(2000));
 
 Console.WriteLine("### Part 2 ###");
 var example2 = """
@@ -17,8 +17,8 @@ var example2 = """
   3
   2024
   """;
-Solving.Go(example2, new IntParser(), new Solver2(), false);
-Solving.Go(null, new IntParser(), new Solver2());
+Solving.Go(example2, new IntParser(), new Solver2(new(-2, 1, -1, 3)), false);
+Solving.Go(null, new IntParser(), new Solver2(new(-2, 3, -3, 3)));
 
 class IntParser : IParser<int[]>
 {
@@ -48,12 +48,13 @@ class Solver(int secretCount) : ISolver<int[], long>
   }
 }
 
-class Solver2 : ISolver<int[], int>
+class Solver2(Sequence expectedBest) : ISolver<int[], int>
 {
   const int secretCount = 2000;
 
   public int Solve(int[] data)
   {
+    var t = 0;
     Dictionary<Sequence, int> totalBest = new();
     foreach (var initialValue in data)
     {
@@ -91,7 +92,16 @@ class Solver2 : ISolver<int[], int>
         totalBest[kv.Key] = totalBest.TryGetValue(kv.Key, out var total) ? total + kv.Value : kv.Value;
       }
 
-      Console.WriteLine($"{initialValue}: {secret} (in {sw.Elapsed})");
+      var b = best.GetValueOrDefault(expectedBest);
+      t += b;
+      Console.WriteLine($"{initialValue}: {secret} selling for {b} bananas - {t} in total (in {sw.Elapsed})");
+    }
+
+    var orderByMax = totalBest.OrderByDescending(x => x.Value);
+    Console.WriteLine("Top-10:");
+    foreach (var kv in orderByMax.Take(10))
+    {
+      Console.WriteLine($"{kv.Key} gets {kv.Value}");
     }
 
     var overallBest = totalBest.MaxBy(x => x.Value);
