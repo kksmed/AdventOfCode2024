@@ -12,16 +12,21 @@ using Common;
 // // Solving.Go(example, new IntParser(), new Solver(2000));
 //
 // Console.WriteLine("### Part 2 ###");
-// var example2 = """
-//   1
-//   2
-//   3
-//   2024
-//   """;
-// Solving.Go(example2, new IntParser(), new Solver2(new(-2, 1, -1, 3)), false);
+var example2 = """
+  1
+  2
+  3
+  2024
+  """;
+Solving.Go(example2, new IntParser(), new Solver2(new(-2, 1, -1, 3)), false);
 Solving.Go(null, new IntParser(), new Solver2(new(-2, 3, -3, 3)));
 
+Console.WriteLine("");
+Console.WriteLine("Without Example:");
 Solving.Go(null, new NoParser(), new Day22Part2Solver(2000));
+Console.WriteLine("");
+Console.WriteLine("With Example:");
+Solving.Go(example2, new NoParser(), new Day22Part2Solver(2000));
 
 //AlternativeSolution.Main();
 
