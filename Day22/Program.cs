@@ -10,6 +10,7 @@ var example = """
   """;
 
 Solving.Go(example, new IntParser(), new Solver(2000));
+Solving.Go(null, new IntParser(), new Solver2());
 
 class IntParser : IParser<int[]>
 {
@@ -28,7 +29,7 @@ class Solver(int secretCount) : ISolver<int[], long>
       long secret = initialValue;
       for (var i = 0; i < secretCount; i++)
       {
-        secret = NextRandom(secret);
+        secret = MonkeyRandom.NextRandom(secret);
       }
 
       Console.WriteLine($"{initialValue}: {secret} (in {sw.Elapsed})");
@@ -37,8 +38,63 @@ class Solver(int secretCount) : ISolver<int[], long>
 
     return sum;
   }
+}
 
-  internal long NextRandom(long secret)
+class Solver2 : ISolver<int[], Sequence>
+{
+  const int secretCount = 2000;
+
+  public Sequence Solve(int[] data)
+  {
+    Dictionary<Sequence, int> totalBest = new();
+    foreach (var initialValue in data)
+    {
+      var sw = Stopwatch.StartNew();
+      Dictionary<Sequence, int> best = new();
+      var previousChanges = new int[4];
+      var previousPrice = 0; // initial value is not used
+      long secret = initialValue;
+      for (var i = 0; i < secretCount; i++)
+      {
+        secret = MonkeyRandom.NextRandom(secret);
+        var price = (int)(secret % 10);
+
+        // First
+        if (i == 0)
+        {
+          previousPrice = price;
+          continue;
+        }
+
+        var change = price - previousPrice;
+        previousChanges[i % 4] = change;
+        previousPrice = price;
+
+        // First 3 has no sequence
+        if (i < 3)
+          continue;
+
+        var sequence = Sequence.FromArray(previousChanges, i);
+        best.TryAdd(sequence, price);
+      }
+
+      foreach (var kv in best)
+      {
+        totalBest[kv.Key] = totalBest.TryGetValue(kv.Key, out var total) ? total + kv.Value : kv.Value;
+      }
+
+      Console.WriteLine($"{initialValue}: {secret} (in {sw.Elapsed})");
+    }
+
+    var overallBest = totalBest.MaxBy(x => x.Value);
+    Console.WriteLine($"Best sequence {overallBest.Key}: Giving {overallBest.Value}");
+    return overallBest.Key;
+  }
+}
+
+static class MonkeyRandom
+{
+  public static long NextRandom(long secret)
   {
     // Step 1: x64
     secret = MixAndPrune(secret << 6, secret);
@@ -57,4 +113,10 @@ class Solver(int secretCount) : ISolver<int[], long>
       return s;
     }
   }
+}
+
+record Sequence(int First, int Second, int Third, int Fourth)
+{
+  public static Sequence FromArray(int[] array, int n) =>
+    new(array[(n - 3) % 4], array[(n - 2) % 4], array[(n - 1) % 4], array[n % 4]);
 }
