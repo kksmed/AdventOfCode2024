@@ -60,7 +60,7 @@ class Solver(int secretCount) : ISolver<int[], int>
 
 class Solver2(Sequence expectedBest) : ISolver<int[], int>
 {
-  const int secretCount = 2000;
+  const int priceChanges = 2000;
 
   public int Solve(int[] data)
   {
@@ -71,20 +71,12 @@ class Solver2(Sequence expectedBest) : ISolver<int[], int>
       var sw = Stopwatch.StartNew();
       HashSet<Sequence> seen = [];
       var previousChanges = new int[4];
-      var previousPrice = 0; // initial value is not used
-      var secret = initialValue;
-      for (var i = 0; i < secretCount; i++)
+      var secret = MonkeyRandom.NextRandom(initialValue);
+      var previousPrice = secret % 10;
+      for (var i = 0; i < priceChanges; i++)
       {
         secret = MonkeyRandom.NextRandom(secret);
         var price = secret % 10;
-
-        // First
-        if (i == 0)
-        {
-          previousPrice = price;
-          continue;
-        }
-
         var change = price - previousPrice;
         previousChanges[i % 4] = change;
         previousPrice = price;
