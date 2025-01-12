@@ -48,11 +48,11 @@ class Solver(int secretCount) : ISolver<int[], long>
   }
 }
 
-class Solver2 : ISolver<int[], string>
+class Solver2 : ISolver<int[], int>
 {
   const int secretCount = 2000;
 
-  public string Solve(int[] data)
+  public int Solve(int[] data)
   {
     Dictionary<Sequence, int> totalBest = new();
     foreach (var initialValue in data)
@@ -96,7 +96,7 @@ class Solver2 : ISolver<int[], string>
 
     var overallBest = totalBest.MaxBy(x => x.Value);
     Console.WriteLine($"Overall best sequence {overallBest.Key}: Giving {overallBest.Value} in total");
-    return $"{overallBest.Key.First},{overallBest.Key.Second},{overallBest.Key.Third},{overallBest.Key.Fourth}";
+    return overallBest.Value;
   }
 }
 
