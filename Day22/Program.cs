@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using Common;
 
-var testValue = 123;
 var example = """
   1
   10
@@ -10,6 +9,15 @@ var example = """
   """;
 
 Solving.Go(example, new IntParser(), new Solver(2000));
+
+Console.WriteLine("### Part 2 ###");
+var example2 = """
+  1
+  2
+  3
+  2024
+  """;
+Solving.Go(example2, new IntParser(), new Solver2(), false);
 Solving.Go(null, new IntParser(), new Solver2());
 
 class IntParser : IParser<int[]>
@@ -40,11 +48,11 @@ class Solver(int secretCount) : ISolver<int[], long>
   }
 }
 
-class Solver2 : ISolver<int[], Sequence>
+class Solver2 : ISolver<int[], string>
 {
   const int secretCount = 2000;
 
-  public Sequence Solve(int[] data)
+  public string Solve(int[] data)
   {
     Dictionary<Sequence, int> totalBest = new();
     foreach (var initialValue in data)
@@ -87,8 +95,8 @@ class Solver2 : ISolver<int[], Sequence>
     }
 
     var overallBest = totalBest.MaxBy(x => x.Value);
-    Console.WriteLine($"Best sequence {overallBest.Key}: Giving {overallBest.Value}");
-    return overallBest.Key;
+    Console.WriteLine($"Overall best sequence {overallBest.Key}: Giving {overallBest.Value} in total");
+    return $"{overallBest.Key.First},{overallBest.Key.Second},{overallBest.Key.Third},{overallBest.Key.Fourth}";
   }
 }
 
