@@ -115,14 +115,14 @@ static class MonkeyRandom
 
     int MixAndPrune(int value, int s)
     {
-      // As value might have turned negative due to left-shift we first disregard the bits that have no further impact:
-      const int twentyThreeOnes = (1 << 24) - 1;
-      value &= twentyThreeOnes;
-
       // Mix
       value ^= s;
+
+      // As value might have turned negative due to left-shift we first disregard the bits that have no further impact:
       // Prune
-      value %= 16777216; // 2^24
+      const int twentyThreeOnes = 16777216 - 1;  // 16777216 = 2^24
+      value &= twentyThreeOnes;
+
       return value;
     }
   }
