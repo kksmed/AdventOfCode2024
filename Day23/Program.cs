@@ -2,39 +2,39 @@
 using Common;
 
 var example = """
-              kh-tc
-              qp-kh
-              de-cg
-              ka-co
-              yn-aq
-              qp-ub
-              cg-tb
-              vc-aq
-              tb-ka
-              wh-tc
-              yn-cg
-              kh-ub
-              ta-co
-              de-co
-              tc-td
-              tb-wq
-              wh-td
-              ta-ka
-              td-qp
-              aq-cg
-              wq-ub
-              ub-vc
-              de-ta
-              wq-aq
-              wq-vc
-              wh-yn
-              ka-de
-              kh-ta
-              co-tc
-              wh-qp
-              tb-vc
-              td-yn
-              """;
+  kh-tc
+  qp-kh
+  de-cg
+  ka-co
+  yn-aq
+  qp-ub
+  cg-tb
+  vc-aq
+  tb-ka
+  wh-tc
+  yn-cg
+  kh-ub
+  ta-co
+  de-co
+  tc-td
+  tb-wq
+  wh-td
+  ta-ka
+  td-qp
+  aq-cg
+  wq-ub
+  ub-vc
+  de-ta
+  wq-aq
+  wq-vc
+  wh-yn
+  ka-de
+  kh-ta
+  co-tc
+  wh-qp
+  tb-vc
+  td-yn
+  """;
 
 Solving.Go(example, new Parser(), new Solver());
 
@@ -70,6 +70,10 @@ class Solver : ISolver<Dictionary<string, HashSet<string>>, int>
   public int Solve(Dictionary<string, HashSet<string>> data)
   {
     var groups = GetGroups(data, 3).ToList();
+    // foreach (var group in groups)
+    // {
+    //   Console.WriteLine(string.Join(",", group));
+    // }
     return groups.Count(x => x.Any(c => c.StartsWith('t')));
   }
 
@@ -87,7 +91,8 @@ class Solver : ISolver<Dictionary<string, HashSet<string>>, int>
   static List<HashSet<string>> FindSubGroups(
     HashSet<string> group,
     Dictionary<string, HashSet<string>> connections,
-    int groupSize)
+    int groupSize
+  )
   {
     if (groupSize == group.Count)
       return [group];
@@ -95,10 +100,13 @@ class Solver : ISolver<Dictionary<string, HashSet<string>>, int>
     List<HashSet<string>> subGroups = [];
     var last = group.Last();
     var lastConnections = connections[last];
-    foreach (var newGroup in lastConnections.Where(newCandidate => !group.Contains(newCandidate))
-      .Select(newCandidate => new { newCandidate, otherConnections = connections[newCandidate] })
-      .Where(x => x.otherConnections.Count >= groupSize - 1 && group.All(x.otherConnections.Contains))
-      .Select(x => group.Append(x.newCandidate).ToHashSet()))
+    foreach (
+      var newGroup in lastConnections
+        .Where(newCandidate => !group.Contains(newCandidate))
+        .Select(newCandidate => new { newCandidate, otherConnections = connections[newCandidate] })
+        .Where(x => x.otherConnections.Count >= groupSize - 1 && group.All(x.otherConnections.Contains))
+        .Select(x => group.Append(x.newCandidate).ToHashSet())
+    )
     {
       subGroups.AddRange(FindSubGroups(newGroup, connections, groupSize));
     }
