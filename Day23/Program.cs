@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Common;
 
@@ -37,7 +38,9 @@ var example = """
   td-yn
   """;
 
-Solving.Go(example, new Parser(), new Solver(), new Solver2());
+// Solving.Go(example, new Parser(), new Solver(), new Solver2());
+
+Solving.Go(null, new Parser(), new Solver2());
 
 class Parser : IParser<Dictionary<string, HashSet<string>>>
 {
@@ -106,7 +109,6 @@ static class LanFinder
     [NotNullWhen(true)] out HashSet<string>? group
   )
   {
-    // Maybe do more iterations
     Dictionary<string, HashSet<string>> connectionsToRemove;
     do
     {
@@ -118,22 +120,31 @@ static class LanFinder
       connections = filteredConnections;
     } while (connectionsToRemove.Count > 0);
 
+    var alreadyChecked = new HashSet<string>();
+    var largestGroup = 0;
     foreach (var kvConnections in connections)
     {
-      if (TryGetSubGroup([kvConnections.Key], connections, groupSize, out group))
+      var sw = Stopwatch.StartNew();
+      alreadyChecked.Add(kvConnections.Key);
+      if (TryGetSubGroup([kvConnections.Key], alreadyChecked.ToHashSet(), out group))
         return true;
+      Console.WriteLine($"Checked : {kvConnections.Key} in {sw.Elapsed}");
     }
 
     group = null;
     return false;
 
-    static bool TryGetSubGroup(
+    bool TryGetSubGroup(
       HashSet<string> group,
-      Dictionary<string, HashSet<string>> connections,
-      int groupSize,
+      HashSet<string> alreadyCheckedWithinGroup,
       [NotNullWhen(true)] out HashSet<string>? subGroup
     )
     {
+      if (group.Count > largestGroup)
+      {
+        largestGroup = group.Count;
+        Console.WriteLine($"Largest group: {largestGroup}");
+      }
       if (groupSize == group.Count)
       {
         subGroup = group;
@@ -142,16 +153,22 @@ static class LanFinder
 
       var last = group.Last();
       var lastConnections = connections[last];
-      foreach (
-        var newGroup in lastConnections
-          .Where(newCandidate => !group.Contains(newCandidate))
-          .Select(newCandidate => new { newCandidate, otherConnections = connections[newCandidate] })
-          .Where(x => x.otherConnections.Count >= groupSize - 1 && group.All(x.otherConnections.Contains))
-          .Select(x => group.Append(x.newCandidate).ToHashSet())
-      )
+
+      foreach (var newCandidate in lastConnections.Where(x => !alreadyCheckedWithinGroup.Contains(x)))
       {
-        if (TryGetSubGroup(newGroup, connections, groupSize - 1, out subGroup))
+        var newConnections = connections[newCandidate];
+        if (newConnections.Count < groupSize - 1 || !group.All(newConnections.Contains))
+        {
+          alreadyCheckedWithinGroup.Add(newCandidate);
+          continue;
+        }
+
+        group.Add(newCandidate);
+        alreadyCheckedWithinGroup.Add(newCandidate);
+        if (TryGetSubGroup(group, alreadyCheckedWithinGroup, out subGroup))
           return true;
+        group.Remove(newCandidate);
+        alreadyCheckedWithinGroup.Remove(newCandidate);
       }
 
       subGroup = null;
