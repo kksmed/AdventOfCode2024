@@ -126,10 +126,16 @@ class Solver : ISolver<Data, long>
   public long Solve(Data data)
   {
     var values = data.Values;
-    foreach (var instruction in data.Instructions)
+    var instructions = new Queue<Instruction>(data.Instructions);
+    while (instructions.Count > 0)
     {
-      var left = values[instruction.Left];
-      var right = values[instruction.Right];
+      var instruction = instructions.Dequeue();
+      if (!values.TryGetValue(instruction.Left, out var left) || !values.TryGetValue(instruction.Right, out var right))
+      {
+        instructions.Enqueue(instruction);
+        continue;
+      }
+
       var result = instruction.Operation switch
       {
         Operation.And => left & right,
