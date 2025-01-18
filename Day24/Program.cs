@@ -1,4 +1,5 @@
-﻿using Common;
+﻿using System.Diagnostics;
+using Common;
 
 var smallExample = """
   x00: 1
@@ -67,6 +68,7 @@ var parser = new Parser();
 var solver = new Solver();
 Solving.Go(smallExample, parser, solver, false);
 Solving.Go(bigExample, parser, solver);
+Solving.Go(null, parser, new Solver2());
 
 class Parser : IParser<Data>
 {
@@ -117,25 +119,32 @@ class Parser : IParser<Data>
         }
       );
     }
-    return new() { Values = values, Instructions = instructions };
+    return new() { Values = values, Instructions = instructions.ToArray() };
   }
 }
 
-class Solver : ISolver<Data, long>
+class Solver : ISolver<Data, long?>
 {
-  public long Solve(Data data)
+  public long? Solve(Data data)
   {
     var values = data.Values;
     var instructions = new Queue<Instruction>(data.Instructions);
+    var staleCount = 0;
     while (instructions.Count > 0)
     {
       var instruction = instructions.Dequeue();
       if (!values.TryGetValue(instruction.Left, out var left) || !values.TryGetValue(instruction.Right, out var right))
       {
+        staleCount++;
         instructions.Enqueue(instruction);
+
+        if (staleCount > instructions.Count)
+          return null;
+
         continue;
       }
 
+      staleCount = 0;
       var result = instruction.Operation switch
       {
         Operation.And => left & right,
@@ -146,29 +155,131 @@ class Solver : ISolver<Data, long>
       values[instruction.Output] = result;
     }
 
-    var solution = 0L;
-    foreach (var kv in values.Where(x => x.Key.StartsWith('z')).OrderByDescending(x => x.Key))
+    return Combiner.GetValue('z', values);
+  }
+}
+
+class Solver2 : ISolver<Data, string>
+{
+  readonly Solver solver1 = new();
+
+  public string Solve(Data data)
+  {
+    var x = Combiner.GetValue('x', data.Values);
+    var y = Combiner.GetValue('y', data.Values);
+    var expectedSum = x + y;
+    Console.WriteLine($"x: {x} y: {y} expected sum:{expectedSum})");
+    // var checkedSwaps = new HashSet<string>();
+    var total = 0L;
+    var batch = 0L;
+    var sw = Stopwatch.StartNew();
+    foreach (var swap in GenerateSwaps(data, 4))
     {
-      solution <<= 1;
-      solution += kv.Value ? 1 : 0;
+      var output = solver1.Solve(swap.Data);
+      if (output == expectedSum)
+        return swap.Swaps;
+      var swapId = string.Join(',', swap.swapIds.Select(p => $"{p.Item1}<>{p.Item2}"));
+      // if (!checkedSwaps.Add(swapId))
+      //   throw new InvalidOperationException($"Duplicate swap: {swapId}");
+      batch++;
+      total++;
+      if (sw.ElapsedMilliseconds > 1000)
+      {
+        // Console.WriteLine($"Checked swaps: {checkedSwaps.Count} - {count} in {sw.Elapsed}");
+        Console.WriteLine($"Checked swaps: {batch}/{total} in {sw.Elapsed}");
+        Console.WriteLine($"Avg iterations / ms: {batch / sw.ElapsedMilliseconds}");
+        Console.WriteLine($"Most recent swap: ({swapId}) {swap.Swaps}, Output: {output} (not {expectedSum})");
+        sw.Restart();
+        batch = 0;
+      }
+    }
+    throw new InvalidOperationException("No solution found");
+  }
+
+  static IEnumerable<(Data Data, string Swaps, List<(int, int)> swapIds)> GenerateSwaps(Data data, int swapCount)
+  {
+    foreach (var swaps in GetPairs(data.Instructions.Length, 0, swapCount))
+    {
+      var dataCopy = data.Copy();
+      foreach (var (j, k) in swaps)
+        (dataCopy.Instructions[j].Output, dataCopy.Instructions[k].Output) = (
+          dataCopy.Instructions[k].Output,
+          dataCopy.Instructions[j].Output
+        );
+
+      var swapString = string.Join(
+        ",",
+        swaps.SelectMany(x => new[] { data.Instructions[x.Item1].Output, data.Instructions[x.Item2].Output }).Order()
+      );
+
+      yield return (dataCopy, swapString, swaps);
     }
 
-    return solution;
+    yield break;
+
+    static IEnumerable<List<(int, int)>> GetPairs(int length, int start, int pairCount)
+    {
+      if (pairCount == 0)
+        throw new ArgumentException(" must be greater than 0", nameof(pairCount));
+
+      for (var j = start; j < length; j++)
+      {
+        for (var k = j + 1; k < length; k++)
+        {
+          List<(int, int)> pairs = [(j, k)];
+          if (pairCount == 1)
+          {
+            yield return pairs;
+          }
+          else
+          {
+            foreach (var restPairs in GetPairs(length, k + 1, pairCount - 1))
+            {
+              if (restPairs.Count != pairCount - 1)
+                continue;
+
+              yield return pairs.Concat(restPairs).ToList();
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static class Combiner
+{
+  public static long GetValue(char prefix, Dictionary<string, bool> values)
+  {
+    var bitCounter = 0;
+    var value = 0L;
+    foreach (var kv in values.Where(x => x.Key.StartsWith(prefix)).OrderByDescending(x => x.Key))
+    {
+      bitCounter++;
+      value <<= 1;
+      value += kv.Value ? 1 : 0;
+
+      if (bitCounter > 63)
+        throw new InvalidOperationException("Overflow!");
+    }
+    return value;
   }
 }
 
 record Data
 {
-  public Dictionary<string, bool> Values { get; init; }
-  public List<Instruction> Instructions { get; init; }
+  public required Dictionary<string, bool> Values { get; init; }
+  public required Instruction[] Instructions { get; init; }
+
+  public Data Copy() => new() { Values = new(Values), Instructions = Instructions.ToArray() };
 }
 
 record Instruction
 {
-  public string Left { get; init; }
-  public string Right { get; init; }
-  public string Output { get; init; }
-  public Operation Operation { get; init; }
+  public required string Left { get; init; }
+  public required string Right { get; init; }
+  public required string Output { get; set; }
+  public required Operation Operation { get; init; }
 }
 
 enum Operation
