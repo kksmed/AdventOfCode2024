@@ -68,14 +68,14 @@ var parser = new Parser();
 var solver = new Solver();
 Solving.Go(smallExample, parser, solver, false);
 Solving.Go(bigExample, parser, solver);
-Solving.Go(null, parser, new Solver2());
+Solving.Go(null, parser, new Validator());
 
 class Parser : IParser<Data>
 {
   public Data Parse(string[] input)
   {
     var values = new Dictionary<string, bool>();
-    var instructions = new List<Instruction>();
+    var instructions = new List<Gate>();
     var isInstruction = false;
     foreach (var line in input)
     {
@@ -119,16 +119,16 @@ class Parser : IParser<Data>
         }
       );
     }
-    return new() { Values = values, Instructions = instructions.ToArray() };
+    return new() { Values = values, Gates = instructions.ToArray() };
   }
 }
 
-class Solver : ISolver<Data, long?>
+class Solver : ISolver<Data, long>
 {
-  public long? Solve(Data data)
+  public long Solve(Data data)
   {
     var values = data.Values;
-    var instructions = new Queue<Instruction>(data.Instructions);
+    var instructions = new Queue<Gate>(data.Gates);
     var staleCount = 0;
     while (instructions.Count > 0)
     {
@@ -139,7 +139,7 @@ class Solver : ISolver<Data, long?>
         instructions.Enqueue(instruction);
 
         if (staleCount > instructions.Count)
-          return null;
+          return -1;
 
         continue;
       }
@@ -169,6 +169,30 @@ class Solver2 : ISolver<Data, string>
     var y = Combiner.GetValue('y', data.Values);
     var expectedSum = x + y;
     Console.WriteLine($"x: {x} y: {y} expected sum:{expectedSum})");
+
+    var unchangedData = data.Copy();
+    var unchanged = solver1.Solve(unchangedData);
+    Console.WriteLine($"Unchanged output: {unchanged}");
+
+    var diff = expectedSum ^ unchanged;
+    Console.WriteLine($"Diff: {diff:B}");
+
+    var diffBits = new List<int>();
+    for (var i = 0; i < 64; i++)
+    {
+      if ((diff & 1L << i) != 0)
+        diffBits.Add(i);
+    }
+    Console.WriteLine($"Bits: {string.Join(',', diffBits)}");
+
+    var outputBits = GetOutputs('z', unchangedData.Values);
+    var wrongOutputs = diffBits.Select(i => outputBits[i]).ToList();
+    Console.WriteLine($"Outputs: {string.Join(',', wrongOutputs)}");
+
+    var wrongGates = GetWrongGates(data.Gates, wrongOutputs).Distinct().ToList();
+    Console.WriteLine($"Wrong gates: {wrongGates.Count}");
+    Console.WriteLine($"{string.Join(Environment.NewLine, wrongGates.Select(g => g.ToString()))}");
+
     // var checkedSwaps = new HashSet<string>();
     var total = 0L;
     var batch = 0L;
@@ -196,20 +220,38 @@ class Solver2 : ISolver<Data, string>
     throw new InvalidOperationException("No solution found");
   }
 
+  static List<Gate> GetWrongGates(Gate[] dataInstructions, List<string> wrongOutputs)
+  {
+    var queue = new Queue<string>(wrongOutputs);
+    var list = new List<Gate>();
+    while (queue.Count > 0)
+    {
+      var output = queue.Dequeue();
+
+      var instruction = dataInstructions.FirstOrDefault(x => x.Output == output);
+
+      if (instruction == null)
+        continue;
+
+      list.Add(instruction);
+      queue.Enqueue(instruction.Left);
+      queue.Enqueue(instruction.Right);
+    }
+
+    return list;
+  }
+
   static IEnumerable<(Data Data, string Swaps, List<(int, int)> swapIds)> GenerateSwaps(Data data, int swapCount)
   {
-    foreach (var swaps in GetPairs(data.Instructions.Length, 0, swapCount))
+    foreach (var swaps in GetPairs(data.Gates.Length, 0, swapCount))
     {
       var dataCopy = data.Copy();
       foreach (var (j, k) in swaps)
-        (dataCopy.Instructions[j].Output, dataCopy.Instructions[k].Output) = (
-          dataCopy.Instructions[k].Output,
-          dataCopy.Instructions[j].Output
-        );
+        (dataCopy.Gates[j].Output, dataCopy.Gates[k].Output) = (dataCopy.Gates[k].Output, dataCopy.Gates[j].Output);
 
       var swapString = string.Join(
         ",",
-        swaps.SelectMany(x => new[] { data.Instructions[x.Item1].Output, data.Instructions[x.Item2].Output }).Order()
+        swaps.SelectMany(x => new[] { data.Gates[x.Item1].Output, data.Gates[x.Item2].Output }).Order()
       );
 
       yield return (dataCopy, swapString, swaps);
@@ -245,6 +287,96 @@ class Solver2 : ISolver<Data, string>
       }
     }
   }
+
+  static List<string> GetOutputs(char prefix, Dictionary<string, bool> values) =>
+    values.Where(x => x.Key.StartsWith(prefix)).OrderByDescending(x => x.Key).Select(x => x.Key).ToList();
+}
+
+class Validator : ISolver<Data, string>
+{
+  public string Solve(Data data)
+  {
+    (string, string)[] swaps = [("z10", "ggn"), ("ndw", "jcb"), ("grm", "z32"), ("z39", "twr")];
+
+    foreach (var (outA, outB) in swaps)
+    {
+      Swap(data.Gates, outA, outB);
+    }
+
+    var carryIn = ""; // No carry in for the first gate
+    for (var i = 0; i <= 44; i++) // 44 is from looking manually at the input
+    {
+      Console.WriteLine($"Checking {i}...");
+      var xGate = $"x{i:D2}";
+      var yGate = $"y{i:D2}";
+      var and = GetGate(data.Gates, xGate, yGate, Operation.And);
+      var xor = GetGate(data.Gates, xGate, yGate, Operation.Xor);
+
+      if (i == 0)
+      {
+        if (xor.Output != "z00")
+          throw new InvalidOperationException(
+            $"XOR gate for {xGate} and {yGate} should output z00, but it outputs {xor.Output}"
+          );
+
+        carryIn = and.Output;
+        continue;
+      }
+
+      var xorToOut = GetGate(data.Gates, xor.Output, carryIn, Operation.Xor);
+      if (xorToOut.Output != $"z{i:D2}")
+        throw new InvalidOperationException(
+          $"XOR gate for {xor.Output} and {carryIn} should output z{i:D2}, but it outputs {xorToOut.Output}"
+        );
+
+      var andToCarry = GetGate(data.Gates, xor.Output, carryIn, Operation.And);
+      var orToCarry = GetGate(data.Gates, andToCarry.Output, and.Output, Operation.Or);
+      carryIn = orToCarry.Output;
+    }
+
+    // Comfirm by running the gates
+    var xValue = Combiner.GetValue('x', data.Values);
+    var yValue = Combiner.GetValue('y', data.Values);
+    var expectedSum = xValue + yValue;
+    Console.WriteLine($"x: {xValue} y: {yValue} expected sum:{expectedSum})");
+
+    var output = new Solver().Solve(data);
+    Console.WriteLine($"Output: {output}");
+
+    if (expectedSum != output)
+      throw new InvalidOperationException($"Expected sum: {expectedSum}, but got {output}");
+
+    return string.Join(",", swaps.SelectMany(x => new[] { x.Item1, x.Item2 }).Order());
+  }
+
+  static Gate GetGate(Gate[] gates, string inA, string inB, Operation op)
+  {
+    var gate = gates.SingleOrDefault(x =>
+      x.Operation == op && (x.Left == inA && x.Right == inB || x.Left == inB && x.Right == inA)
+    );
+
+    if (gate == null)
+      throw new InvalidOperationException($"{op}-gate not found for {inA} and {inB}");
+
+    return gate;
+  }
+
+  static Gate GetGate(Gate[] gates, string output)
+  {
+    var gate = gates.SingleOrDefault(x => x.Output == output);
+    if (gate == null)
+      throw new InvalidOperationException($"Instruction outputting {output} not found");
+    return gate;
+  }
+
+  static void Swap(Gate[] instructions, string a, string b)
+  {
+    var instructionA = GetGate(instructions, a);
+    var instructionB = GetGate(instructions, b);
+
+    instructionB.Output = a;
+    instructionA.Output = b;
+  }
 }
 
 static class Combiner
@@ -269,12 +401,12 @@ static class Combiner
 record Data
 {
   public required Dictionary<string, bool> Values { get; init; }
-  public required Instruction[] Instructions { get; init; }
+  public required Gate[] Gates { get; init; }
 
-  public Data Copy() => new() { Values = new(Values), Instructions = Instructions.ToArray() };
+  public Data Copy() => new() { Values = new(Values), Gates = Gates.ToArray() };
 }
 
-record Instruction
+record Gate
 {
   public required string Left { get; init; }
   public required string Right { get; init; }
